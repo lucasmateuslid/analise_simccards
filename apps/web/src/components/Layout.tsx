@@ -2,6 +2,7 @@ import { NavLink, Outlet } from 'react-router-dom';
 
 const LINKS = [
   { para: '/', rotulo: 'Dashboard', fim: true },
+  { para: '/candidatas', rotulo: 'Candidatas a cancelar', fim: false },
   { para: '/upload', rotulo: 'Importar planilha', fim: false },
   { para: '/mapeamentos', rotulo: 'Mapeamentos', fim: false },
 ];

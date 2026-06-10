@@ -22,12 +22,22 @@ insert into public.linhas (iccid, msisdn, broker_id, plano_id, status, protegida
   -- linha ociosa porém veículo segue ativo no rastreamento (parado ≠ cancelado)
   ('8955170110001000005', '5511990000005', '22222222-2222-2222-2222-222222222222', 'bbbbbbbb-1111-1111-1111-111111111111', 'ativo', false, null);
 
+-- Linhas que exercitam as proteções por data (Fase 3).
+insert into public.linhas
+  (iccid, msisdn, broker_id, plano_id, status, protegida, motivo_protecao, data_ativacao, fidelidade_ate) values
+  -- ociosa, sem veículo, mas ativada há poucos dias → protegida (recém-ativada)
+  ('8955170110001000006', '5511990000006', '22222222-2222-2222-2222-222222222222', 'bbbbbbbb-1111-1111-1111-111111111111', 'ativo', false, null, '2026-05-25', null),
+  -- ociosa, sem veículo, mas dentro da fidelidade → protegida (fidelidade)
+  ('8955170110001000007', '5511990000007', '22222222-2222-2222-2222-222222222222', 'bbbbbbbb-1111-1111-1111-111111111111', 'ativo', false, null, '2025-08-01', '2026-12-31');
+
 insert into public.consumo_mensal (iccid, referencia_mes, consumo_mb, custo, ultima_conexao, fonte) values
   ('8955170110001000001', '2026-05', 8.42, 4.90, '2026-05-30T18:22:00Z', 'planilha'),
   ('8955170110001000002', '2026-05', 23.70, 11.45, '2026-05-31T07:10:00Z', 'planilha'),
   ('8955170110001000003', '2026-05', 0.00, 7.90, '2026-02-08T03:15:00Z', 'planilha'),
   ('8955170110001000004', '2026-05', 0.00, 5.50, '2026-01-20T11:00:00Z', 'planilha'),
-  ('8955170110001000005', '2026-05', 0.12, 5.50, '2026-02-25T22:40:00Z', 'planilha');
+  ('8955170110001000005', '2026-05', 0.12, 5.50, '2026-02-25T22:40:00Z', 'planilha'),
+  ('8955170110001000006', '2026-05', 0.00, 5.50, null, 'planilha'),
+  ('8955170110001000007', '2026-05', 0.00, 5.50, '2026-01-10T08:00:00Z', 'planilha');
 
 insert into public.veiculos_vinculo (iccid, placa, ativo) values
   ('8955170110001000001', 'ABC1D23', true),

@@ -29,6 +29,8 @@ export interface Linha {
   status: StatusLinha;
   protegida: boolean;
   motivo_protecao: string | null;
+  data_ativacao: string | null;
+  fidelidade_ate: string | null;
   criado_em: string;
   atualizado_em: string;
 }

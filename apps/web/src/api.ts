@@ -1,11 +1,14 @@
 import type {
   Broker,
   LinhaAnalytics,
+  LinhaAvaliada,
   MapeamentoColunas,
   PreviewPlanilha,
   ResumoBroker,
+  ResumoCancelamento,
   ResumoIngestao,
   ResumoMes,
+  ResumoSyncVeiculos,
 } from './types';
 
 const BASE = '/api';
@@ -82,4 +85,23 @@ export const api = {
     const qs = new URLSearchParams({ mes, ...filtros }).toString();
     return req<LinhaAnalytics[]>(`/analytics/linhas?${qs}`);
   },
+
+  candidatas: (mes: string) => req<LinhaAvaliada[]>(`/cancelamento/candidatas?mes=${mes}`),
+  protegidas: (mes: string) => req<LinhaAvaliada[]>(`/cancelamento/protegidas?mes=${mes}`),
+  resumoCancelamento: (mes: string) =>
+    req<ResumoCancelamento>(`/cancelamento/resumo?mes=${mes}`),
+  proteger: (iccid: string, motivo: string) =>
+    req<{ ok: boolean }>('/cancelamento/proteger', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ iccid, motivo }),
+    }),
+  aprovarCancelamento: (iccid: string) =>
+    req<{ ok: boolean }>('/cancelamento/aprovar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ iccid }),
+    }),
+  sincronizarVeiculos: () =>
+    req<ResumoSyncVeiculos>('/veiculos/sincronizar', { method: 'POST' }),
 };

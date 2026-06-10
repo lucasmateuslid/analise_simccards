@@ -13,7 +13,14 @@ import {
 import { api } from '../api';
 import { Alerta, Card, KpiCard, Spinner, StatusBadge } from '../components/ui';
 import { formatBRL, formatData, formatMb, formatNum, formatPct } from '../format';
-import type { Broker, LinhaAnalytics, ResumoBroker, ResumoMes, StatusLinha } from '../types';
+import type {
+  Broker,
+  LinhaAnalytics,
+  ResumoBroker,
+  ResumoCancelamento,
+  ResumoMes,
+  StatusLinha,
+} from '../types';
 
 const STATUS: StatusLinha[] = ['ativo', 'suspenso', 'cancelado', 'desconhecido'];
 const CORES = ['#0ea5e9', '#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
@@ -25,6 +32,7 @@ export function Dashboard() {
   const [meses, setMeses] = useState<string[]>([]);
   const [mes, setMes] = useState('');
   const [resumo, setResumo] = useState<ResumoMes | null>(null);
+  const [cancel, setCancel] = useState<ResumoCancelamento | null>(null);
   const [porBroker, setPorBroker] = useState<ResumoBroker[]>([]);
   const [linhas, setLinhas] = useState<LinhaAnalytics[]>([]);
   const [brokers, setBrokers] = useState<Broker[]>([]);
@@ -58,10 +66,11 @@ export function Dashboard() {
       return;
     }
     setCarregando(true);
-    Promise.all([api.resumoMes(mes), api.resumoPorBroker(mes)])
-      .then(([r, pb]) => {
+    Promise.all([api.resumoMes(mes), api.resumoPorBroker(mes), api.resumoCancelamento(mes)])
+      .then(([r, pb, rc]) => {
         setResumo(r);
         setPorBroker(pb);
+        setCancel(rc);
       })
       .catch((e: unknown) => setErro(String(e)))
       .finally(() => setCarregando(false));
@@ -132,16 +141,24 @@ export function Dashboard() {
               valor={formatMb(resumo.consumoTotalMb)}
             />
             <KpiCard
-              titulo="Linhas com alto consumo"
-              valor={formatNum(resumo.qtdAltoConsumo)}
-              detalhe="overage ou acima do P90 do broker"
-              tom={resumo.qtdAltoConsumo > 0 ? 'alerta' : 'neutro'}
+              titulo="Candidatas a cancelar"
+              valor={cancel === null ? '—' : formatNum(cancel.qtdCandidatas)}
+              detalhe={
+                cancel === null
+                  ? undefined
+                  : `${formatNum(resumo.qtdAltoConsumo)} com alto consumo · ${cancel.qtdProtegidas} protegidas`
+              }
+              tom={cancel !== null && cancel.qtdCandidatas > 0 ? 'alerta' : 'neutro'}
             />
             <KpiCard
-              titulo="Custo desperdiçado (prelim.)"
-              valor={formatBRL(resumo.custoDesperdicadoPreliminar)}
-              detalhe={`${resumo.qtdOciosasPreliminar} ociosas > ${resumo.limiteOciosidadeDias}d · refinado na Fase 3`}
-              tom={resumo.custoDesperdicadoPreliminar > 0 ? 'alerta' : 'neutro'}
+              titulo="Custo desperdiçado / economia anual"
+              valor={cancel === null ? '—' : formatBRL(cancel.economiaMensalPotencial)}
+              detalhe={
+                cancel === null
+                  ? undefined
+                  : `${formatBRL(cancel.economiaAnualPotencial)}/ano se canceladas`
+              }
+              tom={cancel !== null && cancel.economiaMensalPotencial > 0 ? 'alerta' : 'neutro'}
             />
           </div>
 

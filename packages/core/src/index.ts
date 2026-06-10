@@ -42,3 +42,11 @@ export {
 export type { UnidadeConsumo } from './normalize/unidades.js';
 
 export { parseDataToISO } from './normalize/datas.js';
+
+export { avaliarCancelamento } from './regras/cancelamento.js';
+export type {
+  ClassificacaoLinha,
+  ConfigCancelamento,
+  EntradaAvaliacao,
+  ResultadoAvaliacao,
+} from './regras/cancelamento.js';

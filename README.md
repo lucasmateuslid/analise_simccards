@@ -82,6 +82,11 @@ Analytics (Fase 2):
 - `GET /analytics/meses` · `GET /analytics/resumo?mes=` (custo total, variação vs. mês anterior, alto consumo, ociosas prelim.)
 - `GET /analytics/por-broker?mes=` · `GET /analytics/alto-consumo?mes=` · `GET /analytics/linhas?mes=&broker=&status=&altoConsumo=`
 
+Cancelamento e veículos (Fase 3):
+- `GET /cancelamento/candidatas?mes=` · `GET /cancelamento/protegidas?mes=` · `GET /cancelamento/resumo?mes=`
+- `POST /cancelamento/proteger { iccid, motivo }` · `POST /cancelamento/aprovar { iccid }` (marca como cancelado — decisão humana)
+- `POST /veiculos/sincronizar` — sincroniza `veiculos_vinculo` da fonte de rastreamento (`TRACKING_SOURCE=traccar` ou mock)
+
 O dashboard (`apps/web`) consome esses endpoints via proxy `/api` do Vite. Há um arquivo de exemplo em [`exemplos/`](exemplos/) para testar a importação (layout do broker Arqia, com uma linha propositalmente inválida).
 
 ## Roadmap
@@ -89,5 +94,14 @@ O dashboard (`apps/web`) consome esses endpoints via proxy `/api` do Vite. Há u
 - **Fase 0 — Fundação** ✅ schema + RLS, tipos canônicos, normalizadores testados, esqueletos dos apps
 - **Fase 1 — Ingestão por planilha** ✅ upload XLSX/CSV (SheetJS/papaparse), `PlanilhaAdapter` genérico, mapeamento de colunas configurável por broker, snapshot mensal + log de erros por linha
 - **Fase 2 — Analytics + dashboard** ✅ custo/consumo por broker, variação mensal, alto consumo (overage + P90), KPIs, gráficos recharts e tabela filtrável
-- **Fase 3 — Motor de cancelamento**: candidatas (ociosidade > limite, sem veículo ativo, não protegida) + sincronização com rastreamento. *Obs.: o KPI "custo desperdiçado" no dashboard é hoje uma estimativa preliminar (só ociosidade) — será refinado aqui.*
+- **Fase 3 — Motor de cancelamento** ✅ motor de regras puro no core (candidata vs. protegida com motivo, nunca cancela sozinho), sincronização de `veiculos_vinculo` (Traccar/mock), fila de revisão com aprovar/proteger e KPIs de economia reais no dashboard
 - **Fase 4 — Scraping piloto**: 1 broker via BullMQ + Playwright, retry/backoff e fallback para upload manual
+
+### Motor de cancelamento (Fase 3)
+
+`avaliarCancelamento` (em `packages/core/src/regras/cancelamento.ts`) classifica cada linha:
+
+- **Protegida** (qualquer uma → não cancelar, com motivo): veículo ativo no rastreamento, dentro da fidelidade, ativada há menos de N dias, ou marcação manual (manter / chip reserva).
+- **Candidata** (todas verdadeiras): dias sem conexão > `limite_ociosidade_dias`, status ≠ cancelado, não protegida, sem veículo ativo. Acompanha dias ociosos, custo mensal e economia anualizável.
+
+A "fonte de verdade" do veículo ativo vem de `veiculos_vinculo`, sincronizado via `TrackingSource` (adapter Traccar com credenciais em env, ou mock para dev). Os limites ficam em `app_config` — sem hardcode.

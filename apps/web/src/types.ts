@@ -65,6 +65,39 @@ export interface ResumoBroker {
   qtdAltoConsumo: number;
 }
 
+export type ClassificacaoLinha = 'candidata' | 'protegida' | 'ativa' | 'cancelada';
+
+export interface LinhaAvaliada {
+  iccid: string;
+  msisdn: string | null;
+  broker: string;
+  plano: string | null;
+  status: StatusLinha;
+  classificacao: ClassificacaoLinha;
+  diasSemConexao: number | null;
+  ultimaConexao: string | null;
+  motivosProtecao: string[];
+  custoMensal: number;
+  economiaMensal: number;
+  economiaAnual: number;
+}
+
+export interface ResumoCancelamento {
+  referenciaMes: string;
+  limiteOciosidadeDias: number;
+  qtdCandidatas: number;
+  qtdProtegidas: number;
+  economiaMensalPotencial: number;
+  economiaAnualPotencial: number;
+}
+
+export interface ResumoSyncVeiculos {
+  fonte: string;
+  recebidos: number;
+  sincronizados: number;
+  ignoradosSemLinha: number;
+}
+
 export interface LinhaAnalytics {
   iccid: string;
   msisdn: string | null;

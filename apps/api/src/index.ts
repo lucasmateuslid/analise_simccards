@@ -4,6 +4,7 @@ import { HttpError } from './http.js';
 import { getSupabaseAdmin } from './supabase.js';
 import { analyticsRouter } from './routes/analytics.js';
 import { brokersRouter } from './routes/brokers.js';
+import { cancelamentoRouter, veiculosRouter } from './routes/cancelamento.js';
 import { ingestaoRouter } from './routes/ingestao.js';
 import { mapeamentosRouter } from './routes/mapeamentos.js';
 
@@ -44,6 +45,8 @@ app.use('/brokers', brokersRouter);
 app.use('/mapeamentos', mapeamentosRouter);
 app.use('/ingestao', ingestaoRouter);
 app.use('/analytics', analyticsRouter);
+app.use('/cancelamento', cancelamentoRouter);
+app.use('/veiculos', veiculosRouter);
 
 // Error handler central — precisa dos 4 parâmetros para o Express reconhecer.
 app.use((erro: unknown, _req: Request, res: Response, _next: NextFunction) => {
