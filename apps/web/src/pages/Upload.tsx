@@ -1,6 +1,20 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api';
-import { Alerta, Card, Spinner } from '../components/ui';
+import {
+  Alert,
+  Button,
+  Card,
+  CardTitle,
+  Field,
+  Input,
+  PageHeader,
+  Pill,
+  Select,
+  Spinner,
+  Table,
+  Td,
+  Th,
+} from '../components/ui';
 import type { Broker, MapeamentoColunas, PreviewPlanilha, ResumoIngestao } from '../types';
 
 function mesAtual(): string {
@@ -36,10 +50,7 @@ export function Upload() {
     });
   }, [brokerId]);
 
-  const brokerSelecionado = useMemo(
-    () => brokers.find((b) => b.id === brokerId),
-    [brokers, brokerId],
-  );
+  const brokerSelecionado = useMemo(() => brokers.find((b) => b.id === brokerId), [brokers, brokerId]);
 
   async function aoSelecionarArquivo(f: File | null) {
     setArquivo(f);
@@ -65,7 +76,7 @@ export function Upload() {
 
   async function importar() {
     if (arquivo === null || brokerId === '' || mapeamentoId === '') {
-      setErro('Selecione arquivo, broker e mapeamento.');
+      setErro('Selecione arquivo, fornecedor e mapeamento.');
       return;
     }
     setOcupado(true);
@@ -82,54 +93,46 @@ export function Upload() {
   }
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-lg font-semibold">Importar planilha</h2>
-      {erro !== null && <Alerta tipo="erro">{erro}</Alerta>}
+    <>
+      <PageHeader titulo="Importar planilha" subtitulo="Upload de XLSX/CSV → snapshot mensal" />
+      {erro !== null && <Alert tipo="erro">{erro}</Alert>}
 
-      <Card className="p-4">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <label className="text-sm text-slate-600">
-            Arquivo (XLSX ou CSV)
+      <Card>
+        <CardTitle>Arquivo e destino</CardTitle>
+        <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2">
+          <Field label="Arquivo (XLSX ou CSV)">
             <input
               type="file"
               accept=".xlsx,.xls,.csv"
-              className="mt-1 block w-full text-sm"
+              className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-3 file:py-2 file:text-sm file:font-medium file:text-indigo-700 hover:file:bg-indigo-100"
               onChange={(e) => void aoSelecionarArquivo(e.target.files?.[0] ?? null)}
             />
-          </label>
-          <label className="text-sm text-slate-600">
-            Mês de referência
-            <input
-              type="month"
-              className="mt-1 block w-full rounded border border-slate-300 px-3 py-1.5 text-sm"
-              value={referenciaMes}
-              onChange={(e) => setReferenciaMes(e.target.value)}
-            />
-          </label>
-          <label className="text-sm text-slate-600">
-            Broker
-            <select
-              className="mt-1 block w-full rounded border border-slate-300 px-3 py-1.5 text-sm"
-              value={brokerId}
-              onChange={(e) => setBrokerId(e.target.value)}
-            >
+          </Field>
+          <Field label="Mês de referência">
+            <Input type="month" value={referenciaMes} onChange={(e) => setReferenciaMes(e.target.value)} />
+          </Field>
+          <Field
+            label="Fornecedor"
+            dica={preview?.brokerDetectado ? `Detectado pelo arquivo: ${preview.brokerDetectado.nome}` : undefined}
+          >
+            <Select value={brokerId} onChange={(e) => setBrokerId(e.target.value)}>
               <option value="">— selecione —</option>
               {brokers.map((b) => (
                 <option key={b.id} value={b.id}>
                   {b.nome}
                 </option>
               ))}
-            </select>
-            {preview?.brokerDetectado && (
-              <span className="mt-1 block text-xs text-emerald-600">
-                Detectado pelo nome do arquivo: {preview.brokerDetectado.nome}
-              </span>
-            )}
-          </label>
-          <label className="text-sm text-slate-600">
-            Template de mapeamento
-            <select
-              className="mt-1 block w-full rounded border border-slate-300 px-3 py-1.5 text-sm"
+            </Select>
+          </Field>
+          <Field
+            label="Template de mapeamento"
+            dica={
+              brokerSelecionado && mapeamentos.length === 0
+                ? 'Cadastre um mapeamento para este fornecedor antes de importar.'
+                : undefined
+            }
+          >
+            <Select
               value={mapeamentoId}
               onChange={(e) => setMapeamentoId(e.target.value)}
               disabled={mapeamentos.length === 0}
@@ -141,88 +144,95 @@ export function Upload() {
                   {m.padrao ? ' (padrão)' : ''}
                 </option>
               ))}
-            </select>
-            {brokerSelecionado && mapeamentos.length === 0 && (
-              <span className="mt-1 block text-xs text-amber-600">
-                Cadastre um mapeamento para este broker antes de importar.
-              </span>
-            )}
-          </label>
+            </Select>
+          </Field>
         </div>
-
-        <button
-          className="mt-4 rounded bg-slate-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
-          disabled={ocupado || arquivo === null || mapeamentoId === ''}
-          onClick={() => void importar()}
-        >
-          {ocupado ? 'Processando…' : 'Importar'}
-        </button>
+        <div className="border-t border-slate-100 px-4 py-3">
+          <Button
+            icone="upload"
+            disabled={ocupado || arquivo === null || mapeamentoId === ''}
+            onClick={() => void importar()}
+          >
+            {ocupado ? 'Processando…' : 'Importar'}
+          </Button>
+        </div>
       </Card>
 
       {ocupado && preview === null && <Spinner texto="Lendo arquivo…" />}
 
       {preview !== null && (
-        <Card className="p-4">
-          <h3 className="mb-2 font-medium">
-            Prévia — {preview.totalLinhas} linha(s), {preview.headers.length} coluna(s)
-          </h3>
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-xs">
-              <thead>
-                <tr className="border-b border-slate-200 text-left">
+        <Card>
+          <CardTitle
+            acao={
+              <span className="text-xs text-slate-400">
+                {preview.totalLinhas} linha(s) · {preview.headers.length} coluna(s)
+              </span>
+            }
+          >
+            Prévia do arquivo
+          </CardTitle>
+          <Table>
+            <thead>
+              <tr>
+                {preview.headers.map((h) => (
+                  <Th key={h}>{h}</Th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {preview.amostra.map((linha, i) => (
+                <tr key={i} className="border-b border-slate-50">
                   {preview.headers.map((h) => (
-                    <th key={h} className="px-2 py-1 font-medium text-slate-600">
-                      {h}
-                    </th>
+                    <Td key={h}>{linha[h] === null || linha[h] === undefined ? '' : String(linha[h])}</Td>
                   ))}
                 </tr>
-              </thead>
-              <tbody>
-                {preview.amostra.map((linha, i) => (
-                  <tr key={i} className="border-b border-slate-100">
-                    {preview.headers.map((h) => (
-                      <td key={h} className="px-2 py-1 text-slate-700">
-                        {linha[h] === null || linha[h] === undefined ? '' : String(linha[h])}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </Table>
         </Card>
       )}
 
       {resumo !== null && (
-        <Card className="p-4">
-          <Alerta tipo={resumo.status === 'erro' ? 'erro' : resumo.status === 'parcial' ? 'info' : 'sucesso'}>
-            Ingestão {resumo.status}: {resumo.qtdLinhas} linha(s) gravada(s)
-            {resumo.qtdErros > 0 ? `, ${resumo.qtdErros} erro(s)` : ''}.
-          </Alerta>
-          {resumo.erros.length > 0 && (
-            <div className="mt-3 max-h-48 overflow-y-auto">
-              <table className="min-w-full text-xs">
-                <thead>
-                  <tr className="text-left text-slate-500">
-                    <th className="px-2 py-1">Linha</th>
-                    <th className="px-2 py-1">Campo</th>
-                    <th className="px-2 py-1">Mensagem</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {resumo.erros.map((e, i) => (
-                    <tr key={i} className="border-t border-slate-100">
-                      <td className="px-2 py-1">{e.registro ?? '—'}</td>
-                      <td className="px-2 py-1">{e.campo ?? '—'}</td>
-                      <td className="px-2 py-1 text-rose-600">{e.mensagem}</td>
+        <Card>
+          <CardTitle
+            acao={
+              <Pill tom={resumo.status === 'erro' ? 'rose' : resumo.status === 'parcial' ? 'slate' : 'emerald'}>
+                {resumo.status}
+              </Pill>
+            }
+          >
+            Resultado da ingestão
+          </CardTitle>
+          <div className="p-4">
+            <Alert tipo={resumo.status === 'erro' ? 'erro' : resumo.status === 'parcial' ? 'info' : 'sucesso'}>
+              {resumo.qtdLinhas} linha(s) gravada(s)
+              {resumo.qtdErros > 0 ? `, ${resumo.qtdErros} erro(s)` : ''}.
+            </Alert>
+            {resumo.erros.length > 0 && (
+              <div className="mt-3 max-h-60 overflow-y-auto">
+                <Table>
+                  <thead>
+                    <tr>
+                      <Th>Linha</Th>
+                      <Th>Campo</Th>
+                      <Th>Mensagem</Th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  </thead>
+                  <tbody>
+                    {resumo.erros.map((e, i) => (
+                      <tr key={i} className="border-b border-slate-50">
+                        <Td>{e.registro ?? '—'}</Td>
+                        <Td>{e.campo ?? '—'}</Td>
+                        <Td className="text-rose-600">{e.mensagem}</Td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              </div>
+            )}
+          </div>
         </Card>
       )}
-    </div>
+    </>
   );
 }

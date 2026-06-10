@@ -1,32 +1,31 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+  Area,
   Bar,
   BarChart,
   CartesianGrid,
   Cell,
-  Legend,
+  ComposedChart,
+  Line,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from 'recharts';
 import { api } from '../api';
-import { Alerta, Card, KpiCard, Spinner, StatusBadge } from '../components/ui';
-import { formatBRL, formatData, formatMb, formatNum, formatPct } from '../format';
-import type {
-  Broker,
-  LinhaAnalytics,
-  ResumoBroker,
-  ResumoCancelamento,
-  ResumoMes,
-  StatusLinha,
-} from '../types';
+import { Card, CardTitle, EmptyState, KpiCard, PageHeader, Select, Spinner, Table, Td, Th } from '../components/ui';
+import { Alert } from '../components/ui';
+import { formatBRL, formatMb, formatNum, formatPct } from '../format';
+import type { PontoTendencia, ResumoBroker, ResumoCancelamento, ResumoMes } from '../types';
 
-const STATUS: StatusLinha[] = ['ativo', 'suspenso', 'cancelado', 'desconhecido'];
-const CORES = ['#0ea5e9', '#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+const CORES = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
-const tooltipBRL = (v: unknown): string => formatBRL(Number(v));
-const tooltipMb = (v: unknown): string => formatMb(Number(v));
+const tt = (cor = '#fff'): React.CSSProperties => ({
+  borderRadius: 8,
+  border: '1px solid #e2e8f0',
+  fontSize: 12,
+  background: cor,
+});
 
 export function Dashboard() {
   const [meses, setMeses] = useState<string[]>([]);
@@ -34,21 +33,15 @@ export function Dashboard() {
   const [resumo, setResumo] = useState<ResumoMes | null>(null);
   const [cancel, setCancel] = useState<ResumoCancelamento | null>(null);
   const [porBroker, setPorBroker] = useState<ResumoBroker[]>([]);
-  const [linhas, setLinhas] = useState<LinhaAnalytics[]>([]);
-  const [brokers, setBrokers] = useState<Broker[]>([]);
+  const [tendencias, setTendencias] = useState<PontoTendencia[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
-  // filtros da tabela
-  const [fBroker, setFBroker] = useState('');
-  const [fStatus, setFStatus] = useState('');
-  const [fAlto, setFAlto] = useState(false);
-
   useEffect(() => {
-    Promise.all([api.meses(), api.listarBrokers()])
-      .then(([ms, bs]) => {
+    Promise.all([api.meses(), api.tendencias()])
+      .then(([ms, td]) => {
         setMeses(ms);
-        setBrokers(bs);
+        setTendencias(td);
         if (ms[0]) {
           setMes(ms[0]);
         } else {
@@ -76,221 +69,201 @@ export function Dashboard() {
       .finally(() => setCarregando(false));
   }, [mes]);
 
-  useEffect(() => {
-    if (mes === '') {
-      return;
-    }
-    const filtros: Record<string, string> = {};
-    if (fBroker !== '') {
-      filtros['broker'] = fBroker;
-    }
-    if (fStatus !== '') {
-      filtros['status'] = fStatus;
-    }
-    if (fAlto) {
-      filtros['altoConsumo'] = 'true';
-    }
-    api.linhas(mes, filtros).then(setLinhas).catch((e: unknown) => setErro(String(e)));
-  }, [mes, fBroker, fStatus, fAlto]);
-
-  const dadosGrafico = useMemo(
+  const picoConsumo = useMemo(
+    () => tendencias.reduce((max, p) => Math.max(max, p.consumoMaxMb), 0),
+    [tendencias],
+  );
+  const dadosBroker = useMemo(
     () => porBroker.map((b) => ({ broker: b.broker, custo: b.custo, consumo: b.consumoMb })),
     [porBroker],
   );
 
   if (meses.length === 0 && !carregando) {
     return (
-      <Alerta tipo="info">
-        Nenhum dado importado ainda. Vá em <strong>Importar planilha</strong> para carregar o primeiro
-        snapshot mensal.
-      </Alerta>
+      <>
+        <PageHeader titulo="Dashboard" subtitulo="Visão consolidada do consumo de chips M2M" />
+        <EmptyState
+          icone="upload"
+          titulo="Nenhum dado importado ainda"
+          descricao="Importe um snapshot mensal em 'Importar planilha' para ver custos, consumo e tendências."
+        />
+      </>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Dashboard</h2>
-        <select
-          className="rounded border border-slate-300 px-3 py-1.5 text-sm"
-          value={mes}
-          onChange={(e) => setMes(e.target.value)}
-        >
-          {meses.map((m) => (
-            <option key={m} value={m}>
-              {m}
-            </option>
-          ))}
-        </select>
-      </div>
+    <>
+      <PageHeader
+        titulo="Dashboard"
+        subtitulo="Visão consolidada e evolução mensal"
+        acoes={
+          meses.length > 0 && (
+            <Select value={mes} onChange={(e) => setMes(e.target.value)} className="w-36">
+              {meses.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
+            </Select>
+          )
+        }
+      />
 
-      {erro !== null && <Alerta tipo="erro">{erro}</Alerta>}
+      {erro !== null && <Alert tipo="erro">{erro}</Alert>}
       {carregando && <Spinner />}
 
-      {resumo !== null && (
+      {resumo !== null && !carregando && (
         <>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {/* KPIs atuais */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <KpiCard
-              titulo="Custo total mensal"
+              titulo="Chips no mês"
+              valor={formatNum(resumo.qtdLinhas)}
+              icone="chip"
+              tom="destaque"
+              detalhe={cancel === null ? undefined : `${cancel.qtdProtegidas} protegidas`}
+            />
+            <KpiCard
+              titulo="Custo total"
               valor={formatBRL(resumo.custoTotal)}
-              detalhe={`${resumo.qtdLinhas} linhas · vs. mês anterior ${formatPct(resumo.variacaoPct)}`}
-              tom={resumo.variacaoPct !== null && resumo.variacaoPct > 0 ? 'alerta' : 'neutro'}
-            />
-            <KpiCard
-              titulo="Consumo total"
-              valor={formatMb(resumo.consumoTotalMb)}
-            />
-            <KpiCard
-              titulo="Candidatas a cancelar"
-              valor={cancel === null ? '—' : formatNum(cancel.qtdCandidatas)}
-              detalhe={
-                cancel === null
+              icone="money"
+              tom={resumo.variacaoPct !== null && resumo.variacaoPct > 0 ? 'alerta' : 'positivo'}
+              tendencia={
+                resumo.variacaoPct === null
                   ? undefined
-                  : `${formatNum(resumo.qtdAltoConsumo)} com alto consumo · ${cancel.qtdProtegidas} protegidas`
+                  : {
+                      valor: formatPct(resumo.variacaoPct),
+                      subindo: resumo.variacaoPct > 0,
+                      bom: resumo.variacaoPct <= 0,
+                    }
               }
-              tom={cancel !== null && cancel.qtdCandidatas > 0 ? 'alerta' : 'neutro'}
+              detalhe="vs. mês anterior"
             />
+            <KpiCard titulo="Consumo total" valor={formatMb(resumo.consumoTotalMb)} icone="signal" />
             <KpiCard
-              titulo="Custo desperdiçado / economia anual"
-              valor={cancel === null ? '—' : formatBRL(cancel.economiaMensalPotencial)}
-              detalhe={
-                cancel === null
-                  ? undefined
-                  : `${formatBRL(cancel.economiaAnualPotencial)}/ano se canceladas`
-              }
-              tom={cancel !== null && cancel.economiaMensalPotencial > 0 ? 'alerta' : 'neutro'}
+              titulo="Economia anual potencial"
+              valor={cancel === null ? '—' : formatBRL(cancel.economiaAnualPotencial)}
+              icone="scissors"
+              tom={cancel !== null && cancel.qtdCandidatas > 0 ? 'alerta' : 'positivo'}
+              detalhe={cancel === null ? undefined : `${cancel.qtdCandidatas} candidatas a cancelar`}
             />
           </div>
 
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <Card className="p-4">
-              <h3 className="mb-3 font-medium">Custo por broker</h3>
-              <ResponsiveContainer width="100%" height={260}>
-                <BarChart data={dadosGrafico}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-                  <XAxis dataKey="broker" fontSize={12} />
-                  <YAxis fontSize={12} />
-                  <Tooltip formatter={tooltipBRL} />
-                  <Bar dataKey="custo" name="Custo (R$)" radius={[4, 4, 0, 0]}>
-                    {dadosGrafico.map((_, i) => (
-                      <Cell key={i} fill={CORES[i % CORES.length]} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+          {/* Evolução mensal */}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <Card>
+              <CardTitle>Evolução de custo e chips</CardTitle>
+              <div className="p-4">
+                <ResponsiveContainer width="100%" height={260}>
+                  <ComposedChart data={tendencias}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                    <XAxis dataKey="referenciaMes" fontSize={12} stroke="#94a3b8" />
+                    <YAxis yAxisId="l" fontSize={12} stroke="#94a3b8" />
+                    <YAxis yAxisId="r" orientation="right" fontSize={12} stroke="#94a3b8" allowDecimals={false} />
+                    <Tooltip contentStyle={tt()} />
+                    <Bar yAxisId="l" dataKey="custoTotal" name="Custo (R$)" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={28} />
+                    <Line yAxisId="r" type="monotone" dataKey="qtdChips" name="Chips" stroke="#10b981" strokeWidth={2.5} dot={{ r: 3 }} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
             </Card>
-            <Card className="p-4">
-              <h3 className="mb-3 font-medium">Consumo por broker</h3>
-              <ResponsiveContainer width="100%" height={260}>
-                <BarChart data={dadosGrafico}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-                  <XAxis dataKey="broker" fontSize={12} />
-                  <YAxis fontSize={12} />
-                  <Tooltip formatter={tooltipMb} />
-                  <Legend />
-                  <Bar dataKey="consumo" name="Consumo (MB)" fill="#10b981" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+
+            <Card>
+              <CardTitle acao={<span className="text-xs text-slate-400">pico histórico {formatMb(picoConsumo)}</span>}>
+                Evolução de consumo
+              </CardTitle>
+              <div className="p-4">
+                <ResponsiveContainer width="100%" height={260}>
+                  <ComposedChart data={tendencias}>
+                    <defs>
+                      <linearGradient id="gConsumo" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#0ea5e9" stopOpacity={0.3} />
+                        <stop offset="100%" stopColor="#0ea5e9" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                    <XAxis dataKey="referenciaMes" fontSize={12} stroke="#94a3b8" />
+                    <YAxis fontSize={12} stroke="#94a3b8" />
+                    <Tooltip contentStyle={tt()} formatter={(v: unknown) => formatMb(Number(v))} />
+                    <Area type="monotone" dataKey="consumoTotalMb" name="Consumo total" stroke="#0ea5e9" strokeWidth={2.5} fill="url(#gConsumo)" />
+                    <Line type="monotone" dataKey="consumoMaxMb" name="Máx. por linha" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
             </Card>
           </div>
 
-          <Card className="p-4">
-            <div className="mb-3 flex flex-wrap items-center gap-3">
-              <h3 className="font-medium">Linhas</h3>
-              <select
-                className="rounded border border-slate-300 px-2 py-1 text-sm"
-                value={fBroker}
-                onChange={(e) => setFBroker(e.target.value)}
-              >
-                <option value="">todos os brokers</option>
-                {brokers.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.nome}
-                  </option>
-                ))}
-              </select>
-              <select
-                className="rounded border border-slate-300 px-2 py-1 text-sm"
-                value={fStatus}
-                onChange={(e) => setFStatus(e.target.value)}
-              >
-                <option value="">todos os status</option>
-                {STATUS.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-              <label className="flex items-center gap-1.5 text-sm text-slate-600">
-                <input type="checkbox" checked={fAlto} onChange={(e) => setFAlto(e.target.checked)} />
-                só alto consumo
-              </label>
-              <span className="ml-auto text-xs text-slate-400">{linhas.length} linha(s)</span>
-            </div>
+          {/* Por broker */}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <Card>
+              <CardTitle>Custo por fornecedor</CardTitle>
+              <div className="p-4">
+                <ResponsiveContainer width="100%" height={240}>
+                  <BarChart data={dadosBroker} layout="vertical" margin={{ left: 8 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+                    <XAxis type="number" fontSize={12} stroke="#94a3b8" />
+                    <YAxis type="category" dataKey="broker" fontSize={12} stroke="#94a3b8" width={80} />
+                    <Tooltip contentStyle={tt()} formatter={(v: unknown) => formatBRL(Number(v))} />
+                    <Bar dataKey="custo" name="Custo" radius={[0, 4, 4, 0]} barSize={22}>
+                      {dadosBroker.map((_, i) => (
+                        <Cell key={i} fill={CORES[i % CORES.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+            <Card>
+              <CardTitle>Consumo por fornecedor</CardTitle>
+              <div className="p-4">
+                <ResponsiveContainer width="100%" height={240}>
+                  <BarChart data={dadosBroker} layout="vertical" margin={{ left: 8 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+                    <XAxis type="number" fontSize={12} stroke="#94a3b8" />
+                    <YAxis type="category" dataKey="broker" fontSize={12} stroke="#94a3b8" width={80} />
+                    <Tooltip contentStyle={tt()} formatter={(v: unknown) => formatMb(Number(v))} />
+                    <Bar dataKey="consumo" name="Consumo" fill="#0ea5e9" radius={[0, 4, 4, 0]} barSize={22} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+          </div>
 
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200 text-left text-xs text-slate-500">
-                    <th className="px-2 py-1.5">ICCID</th>
-                    <th className="px-2 py-1.5">Broker</th>
-                    <th className="px-2 py-1.5">Plano</th>
-                    <th className="px-2 py-1.5">Status</th>
-                    <th className="px-2 py-1.5 text-right">Consumo</th>
-                    <th className="px-2 py-1.5 text-right">Franquia</th>
-                    <th className="px-2 py-1.5 text-right">Custo</th>
-                    <th className="px-2 py-1.5">Última conexão</th>
-                    <th className="px-2 py-1.5 text-right">Dias s/ conexão</th>
+          <Card>
+            <CardTitle acao={<span className="text-xs text-slate-400">{resumo.qtdAltoConsumo} com alto consumo</span>}>
+              Resumo por fornecedor — {mes}
+            </CardTitle>
+            <Table>
+              <thead>
+                <tr>
+                  <Th>Fornecedor</Th>
+                  <Th right>Chips</Th>
+                  <Th right>Consumo</Th>
+                  <Th right>Custo</Th>
+                  <Th right>Alto consumo</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {porBroker.map((b) => (
+                  <tr key={b.brokerId} className="border-b border-slate-50 hover:bg-slate-50/60">
+                    <Td className="font-medium text-slate-800">{b.broker}</Td>
+                    <Td right>{formatNum(b.qtdLinhas)}</Td>
+                    <Td right>{formatMb(b.consumoMb)}</Td>
+                    <Td right>{formatBRL(b.custo)}</Td>
+                    <Td right>
+                      {b.qtdAltoConsumo > 0 ? (
+                        <span className="font-medium text-rose-600">{b.qtdAltoConsumo}</span>
+                      ) : (
+                        '—'
+                      )}
+                    </Td>
                   </tr>
-                </thead>
-                <tbody>
-                  {linhas.map((l) => (
-                    <tr
-                      key={l.iccid}
-                      className={`border-b border-slate-100 ${l.altoConsumo ? 'bg-rose-50' : ''}`}
-                    >
-                      <td className="px-2 py-1.5 font-mono text-xs">{l.iccid}</td>
-                      <td className="px-2 py-1.5">{l.broker}</td>
-                      <td className="px-2 py-1.5">{l.plano ?? '—'}</td>
-                      <td className="px-2 py-1.5">
-                        <StatusBadge status={l.status} />
-                        {l.protegida && (
-                          <span className="ml-1 rounded bg-indigo-100 px-1 text-xs text-indigo-700">
-                            protegida
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-2 py-1.5 text-right">
-                        {formatMb(l.consumoMb)}
-                        {l.overageMb > 0 && (
-                          <span className="ml-1 text-xs text-rose-600">
-                            (+{formatMb(l.overageMb)})
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-2 py-1.5 text-right">
-                        {l.franquiaMb === null ? '—' : formatMb(l.franquiaMb)}
-                      </td>
-                      <td className="px-2 py-1.5 text-right">{formatBRL(l.custo)}</td>
-                      <td className="px-2 py-1.5">{formatData(l.ultimaConexao)}</td>
-                      <td className="px-2 py-1.5 text-right">
-                        {l.diasSemConexao === null ? '—' : l.diasSemConexao}
-                      </td>
-                    </tr>
-                  ))}
-                  {linhas.length === 0 && (
-                    <tr>
-                      <td colSpan={9} className="px-2 py-6 text-center text-slate-400">
-                        Nenhuma linha para os filtros selecionados.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </Table>
           </Card>
         </>
       )}
-    </div>
+    </>
   );
 }

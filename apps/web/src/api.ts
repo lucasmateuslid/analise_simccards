@@ -2,7 +2,9 @@ import type {
   Broker,
   LinhaAnalytics,
   LinhaAvaliada,
+  LinhaListada,
   MapeamentoColunas,
+  PontoTendencia,
   PreviewPlanilha,
   ResumoBroker,
   ResumoCancelamento,
@@ -41,6 +43,7 @@ export const api = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nome, tipo_ingestao }),
     }),
+  removerBroker: (id: string) => req<void>(`/brokers/${id}`, { method: 'DELETE' }),
 
   listarMapeamentos: (brokerId?: string) =>
     req<MapeamentoColunas[]>(`/mapeamentos${brokerId ? `?brokerId=${brokerId}` : ''}`),
@@ -78,6 +81,11 @@ export const api = {
   },
 
   meses: () => req<string[]>('/analytics/meses'),
+  tendencias: () => req<PontoTendencia[]>('/analytics/tendencias'),
+  todasLinhas: (filtros: Record<string, string> = {}) => {
+    const qs = new URLSearchParams(filtros).toString();
+    return req<LinhaListada[]>(`/linhas${qs ? `?${qs}` : ''}`);
+  },
   resumoMes: (mes: string) => req<ResumoMes>(`/analytics/resumo?mes=${mes}`),
   resumoPorBroker: (mes: string) => req<ResumoBroker[]>(`/analytics/por-broker?mes=${mes}`),
   altoConsumo: (mes: string) => req<LinhaAnalytics[]>(`/analytics/alto-consumo?mes=${mes}`),

@@ -238,6 +238,51 @@ export async function obterResumoMes(referenciaMes: string): Promise<ResumoMes> 
   };
 }
 
+export interface PontoTendencia {
+  referenciaMes: string;
+  qtdChips: number;
+  custoTotal: number;
+  consumoTotalMb: number;
+  /** Maior consumo de uma única linha no mês. */
+  consumoMaxMb: number;
+}
+
+/** Série histórica mensal para os gráficos de evolução. */
+export async function obterTendencias(): Promise<PontoTendencia[]> {
+  const { data, error } = await getSupabaseAdmin()
+    .from('consumo_mensal')
+    .select('referencia_mes, consumo_mb, custo, iccid')
+    .order('referencia_mes', { ascending: true });
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const porMes = new Map<string, PontoTendencia>();
+  for (const r of data ?? []) {
+    const mes = r.referencia_mes as string;
+    const consumo = r.consumo_mb as number;
+    const ponto = porMes.get(mes) ?? {
+      referenciaMes: mes,
+      qtdChips: 0,
+      custoTotal: 0,
+      consumoTotalMb: 0,
+      consumoMaxMb: 0,
+    };
+    ponto.qtdChips += 1;
+    ponto.custoTotal += r.custo as number;
+    ponto.consumoTotalMb += consumo;
+    ponto.consumoMaxMb = Math.max(ponto.consumoMaxMb, consumo);
+    porMes.set(mes, ponto);
+  }
+
+  return [...porMes.values()].map((p) => ({
+    ...p,
+    custoTotal: round2(p.custoTotal),
+    consumoTotalMb: round2(p.consumoTotalMb),
+    consumoMaxMb: round2(p.consumoMaxMb),
+  }));
+}
+
 export async function listarMeses(): Promise<string[]> {
   const { data, error } = await getSupabaseAdmin()
     .from('consumo_mensal')

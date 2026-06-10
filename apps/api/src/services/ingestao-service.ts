@@ -46,6 +46,7 @@ function configDoMapeamento(
       status: m['status'],
       ultimaConexao: m['ultimaConexao'],
       franquia: m['franquia'],
+      operadora: m['operadora'],
     },
   };
 }
@@ -121,6 +122,7 @@ async function persistirLinhas(
     consumo_mb: l.consumoMb,
     custo: l.custoMensal,
     ultima_conexao: l.ultimaConexao,
+    operadora: l.operadora,
     fonte: l.fonte,
   }));
   for (const lote of lotes(registrosConsumo, TAMANHO_LOTE)) {

@@ -6,6 +6,7 @@ import { analyticsRouter } from './routes/analytics.js';
 import { brokersRouter } from './routes/brokers.js';
 import { cancelamentoRouter, veiculosRouter } from './routes/cancelamento.js';
 import { ingestaoRouter } from './routes/ingestao.js';
+import { linhasRouter } from './routes/linhas.js';
 import { mapeamentosRouter } from './routes/mapeamentos.js';
 
 const app = express();
@@ -47,6 +48,7 @@ app.use('/ingestao', ingestaoRouter);
 app.use('/analytics', analyticsRouter);
 app.use('/cancelamento', cancelamentoRouter);
 app.use('/veiculos', veiculosRouter);
+app.use('/linhas', linhasRouter);
 
 // Error handler central — precisa dos 4 parâmetros para o Express reconhecer.
 app.use((erro: unknown, _req: Request, res: Response, _next: NextFunction) => {

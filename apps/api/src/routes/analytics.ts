@@ -6,6 +6,7 @@ import {
   obterLinhasAnalytics,
   obterResumoMes,
   obterResumoPorBroker,
+  obterTendencias,
 } from '../services/analytics-service.js';
 
 export const analyticsRouter = Router();
@@ -19,6 +20,10 @@ function exigirMes(valor: unknown): string {
 
 analyticsRouter.get('/meses', async (_req, res) => {
   res.json(await listarMeses());
+});
+
+analyticsRouter.get('/tendencias', async (_req, res) => {
+  res.json(await obterTendencias());
 });
 
 analyticsRouter.get('/resumo', async (req, res) => {

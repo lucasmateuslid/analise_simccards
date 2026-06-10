@@ -27,6 +27,8 @@ export interface LinhaConsumoCanonico {
   consumoMb: number;
   /** Custo mensal em R$. */
   custoMensal: number;
+  /** Operadora/rede conectada (Vivo/Claro/TIM…), distinta do broker. */
+  operadora: string | null;
   status: StatusLinha;
   /** ISO 8601 UTC, ou null se a fonte não informa. */
   ultimaConexao: string | null;

@@ -19,6 +19,7 @@ export interface MapeamentoColunas {
   status?: string;
   ultimaConexao?: string;
   franquia?: string;
+  operadora?: string;
 }
 
 export interface ConfigPlanilhaAdapter {
@@ -179,6 +180,7 @@ export class PlanilhaAdapter implements SourceAdapter {
       const msisdnRaw = leCelula(linha, mapeamento.msisdn);
       const planoRaw = leCelula(linha, mapeamento.plano);
       const plano = celulaVazia(planoRaw) ? (planoFixo ?? '') : String(planoRaw).trim();
+      const operadoraRaw = leCelula(linha, mapeamento.operadora);
 
       linhas.push({
         iccid,
@@ -188,6 +190,7 @@ export class PlanilhaAdapter implements SourceAdapter {
         franquiaMb,
         consumoMb,
         custoMensal,
+        operadora: celulaVazia(operadoraRaw) ? null : String(operadoraRaw).trim(),
         status: normalizarStatus(leCelula(linha, mapeamento.status), statusMap),
         ultimaConexao,
         referenciaMes,

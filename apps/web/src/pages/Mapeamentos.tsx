@@ -1,6 +1,19 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api';
-import { Alerta, Card, Spinner } from '../components/ui';
+import {
+  Alert,
+  Button,
+  Card,
+  CardTitle,
+  EmptyState,
+  Field,
+  Input,
+  PageHeader,
+  Pill,
+  Select,
+  Spinner,
+} from '../components/ui';
+import { Icon } from '../components/Icon';
 import type { Broker, MapeamentoColunas, StatusLinha, UnidadeConsumo } from '../types';
 
 const CAMPOS_CANONICOS: { campo: string; rotulo: string; obrigatorio?: boolean }[] = [
@@ -12,6 +25,7 @@ const CAMPOS_CANONICOS: { campo: string; rotulo: string; obrigatorio?: boolean }
   { campo: 'status', rotulo: 'Status' },
   { campo: 'ultimaConexao', rotulo: 'Última conexão' },
   { campo: 'franquia', rotulo: 'Franquia' },
+  { campo: 'operadora', rotulo: 'Operadora conectada' },
 ];
 
 const UNIDADES: UnidadeConsumo[] = ['bytes', 'KB', 'MB', 'GB'];
@@ -28,15 +42,7 @@ interface FormState {
 }
 
 function formVazio(): FormState {
-  return {
-    id: null,
-    nome: '',
-    unidade_consumo: 'MB',
-    plano_fixo: '',
-    padrao: false,
-    mapeamento: {},
-    statusRows: [],
-  };
+  return { id: null, nome: '', unidade_consumo: 'MB', plano_fixo: '', padrao: false, mapeamento: {}, statusRows: [] };
 }
 
 function paraForm(m: MapeamentoColunas): FormState {
@@ -77,10 +83,7 @@ export function Mapeamentos() {
     if (brokerId === '') {
       return;
     }
-    api
-      .listarMapeamentos(brokerId)
-      .then(setLista)
-      .catch((e: unknown) => setErro(String(e)));
+    api.listarMapeamentos(brokerId).then(setLista).catch((e: unknown) => setErro(String(e)));
     setForm(formVazio());
   }, [brokerId]);
 
@@ -143,58 +146,47 @@ export function Mapeamentos() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <h2 className="text-lg font-semibold">Mapeamentos de colunas</h2>
-        <select
-          className="rounded border border-slate-300 px-3 py-1.5 text-sm"
-          value={brokerId}
-          onChange={(e) => setBrokerId(e.target.value)}
-        >
-          {brokers.map((b) => (
-            <option key={b.id} value={b.id}>
-              {b.nome}
-            </option>
-          ))}
-        </select>
-      </div>
+    <>
+      <PageHeader
+        titulo="Mapeamentos de colunas"
+        subtitulo="Template coluna do arquivo → campo canônico, por fornecedor"
+        acoes={
+          <Select value={brokerId} onChange={(e) => setBrokerId(e.target.value)} className="w-44">
+            {brokers.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.nome}
+              </option>
+            ))}
+          </Select>
+        }
+      />
 
-      {erro !== null && <Alerta tipo="erro">{erro}</Alerta>}
-      {ok !== null && <Alerta tipo="sucesso">{ok}</Alerta>}
+      {erro !== null && <Alert tipo="erro">{erro}</Alert>}
+      {ok !== null && <Alert tipo="sucesso">{ok}</Alert>}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Card className="p-4">
-          <h3 className="mb-3 font-medium">Templates salvos</h3>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card>
+          <CardTitle>Templates salvos</CardTitle>
           {lista.length === 0 ? (
-            <p className="text-sm text-slate-400">Nenhum template para este broker.</p>
+            <EmptyState icone="sliders" titulo="Nenhum template" descricao="Crie um ao lado." />
           ) : (
-            <ul className="space-y-2">
+            <ul className="divide-y divide-slate-100">
               {lista.map((m) => (
-                <li
-                  key={m.id}
-                  className="flex items-center justify-between rounded border border-slate-200 px-3 py-2"
-                >
-                  <span className="text-sm">
-                    {m.nome}{' '}
-                    {m.padrao && (
-                      <span className="ml-1 rounded bg-sky-100 px-1.5 text-xs text-sky-700">
-                        padrão
-                      </span>
-                    )}
-                    <span className="ml-2 text-xs text-slate-400">{m.unidade_consumo}</span>
+                <li key={m.id} className="flex items-center justify-between px-4 py-3">
+                  <span className="flex items-center gap-2 text-sm">
+                    <span className="font-medium text-slate-800">{m.nome}</span>
+                    {m.padrao && <Pill tom="indigo">padrão</Pill>}
+                    <Pill>{m.unidade_consumo}</Pill>
                   </span>
-                  <span className="flex gap-2">
+                  <span className="flex gap-1">
+                    <Button variante="fantasma" className="px-2 py-1 text-xs" onClick={() => setForm(paraForm(m))}>
+                      Editar
+                    </Button>
                     <button
-                      className="text-xs text-sky-600 hover:underline"
-                      onClick={() => setForm(paraForm(m))}
-                    >
-                      editar
-                    </button>
-                    <button
-                      className="text-xs text-rose-600 hover:underline"
+                      className="rounded-md px-2 py-1 text-xs font-medium text-rose-600 hover:bg-rose-50"
                       onClick={() => void remover(m.id)}
                     >
-                      excluir
+                      <Icon name="trash" className="h-3.5 w-3.5" />
                     </button>
                   </span>
                 </li>
@@ -203,65 +195,56 @@ export function Mapeamentos() {
           )}
         </Card>
 
-        <Card className="p-4">
-          <h3 className="mb-3 font-medium">{form.id === null ? 'Novo template' : 'Editar template'}</h3>
-          <div className="space-y-3">
-            <input
-              className="w-full rounded border border-slate-300 px-3 py-1.5 text-sm"
-              placeholder="Nome do template"
-              value={form.nome}
-              onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))}
-            />
+        <Card>
+          <CardTitle>{form.id === null ? 'Novo template' : 'Editar template'}</CardTitle>
+          <div className="space-y-4 p-4">
+            <Field label="Nome do template">
+              <Input value={form.nome} onChange={(e) => setForm((f) => ({ ...f, nome: e.target.value }))} placeholder="Ex.: Arqia — layout padrão" />
+            </Field>
 
-            <div className="grid grid-cols-2 gap-2">
-              {CAMPOS_CANONICOS.map((c) => (
-                <label key={c.campo} className="text-xs text-slate-600">
-                  {c.rotulo}
-                  {c.obrigatorio && <span className="text-rose-500"> *</span>}
-                  <input
-                    className="mt-0.5 w-full rounded border border-slate-300 px-2 py-1 text-sm"
-                    placeholder="coluna do arquivo"
-                    value={form.mapeamento[c.campo] ?? ''}
-                    onChange={(e) => setMap(c.campo, e.target.value)}
-                  />
-                </label>
-              ))}
+            <div>
+              <p className="mb-1.5 text-xs font-medium text-slate-600">Mapeamento de colunas</p>
+              <div className="grid grid-cols-2 gap-2">
+                {CAMPOS_CANONICOS.map((c) => (
+                  <label key={c.campo} className="text-xs text-slate-500">
+                    {c.rotulo}
+                    {c.obrigatorio && <span className="text-rose-500"> *</span>}
+                    <Input
+                      className="mt-0.5 px-2 py-1.5 text-sm"
+                      placeholder="coluna do arquivo"
+                      value={form.mapeamento[c.campo] ?? ''}
+                      onChange={(e) => setMap(c.campo, e.target.value)}
+                    />
+                  </label>
+                ))}
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              <label className="text-xs text-slate-600">
-                Unidade de consumo
-                <select
-                  className="mt-0.5 w-full rounded border border-slate-300 px-2 py-1 text-sm"
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Unidade de consumo">
+                <Select
                   value={form.unidade_consumo}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, unidade_consumo: e.target.value as UnidadeConsumo }))
-                  }
+                  onChange={(e) => setForm((f) => ({ ...f, unidade_consumo: e.target.value as UnidadeConsumo }))}
                 >
                   {UNIDADES.map((u) => (
                     <option key={u}>{u}</option>
                   ))}
-                </select>
-              </label>
-              <label className="text-xs text-slate-600">
-                Plano fixo (se não houver coluna)
-                <input
-                  className="mt-0.5 w-full rounded border border-slate-300 px-2 py-1 text-sm"
-                  value={form.plano_fixo}
-                  onChange={(e) => setForm((f) => ({ ...f, plano_fixo: e.target.value }))}
-                />
-              </label>
+                </Select>
+              </Field>
+              <Field label="Plano fixo (se não houver coluna)">
+                <Input value={form.plano_fixo} onChange={(e) => setForm((f) => ({ ...f, plano_fixo: e.target.value }))} />
+              </Field>
             </div>
 
             <div>
-              <p className="mb-1 text-xs text-slate-600">
-                Tradução de status (rótulo do arquivo → status canônico)
+              <p className="mb-1.5 text-xs font-medium text-slate-600">
+                Tradução de status (rótulo do arquivo → canônico)
               </p>
               {form.statusRows.map((r, i) => (
-                <div key={i} className="mb-1 flex gap-2">
-                  <input
-                    className="flex-1 rounded border border-slate-300 px-2 py-1 text-sm"
-                    placeholder="rótulo no arquivo (ex.: ATIVADO)"
+                <div key={i} className="mb-1.5 flex gap-2">
+                  <Input
+                    className="flex-1 px-2 py-1.5 text-sm"
+                    placeholder="ex.: ATIVADO"
                     value={r.rotulo}
                     onChange={(e) =>
                       setForm((f) => {
@@ -271,8 +254,8 @@ export function Mapeamentos() {
                       })
                     }
                   />
-                  <select
-                    className="rounded border border-slate-300 px-2 py-1 text-sm"
+                  <Select
+                    className="w-36 px-2 py-1.5 text-sm"
                     value={r.status}
                     onChange={(e) =>
                       setForm((f) => {
@@ -285,61 +268,43 @@ export function Mapeamentos() {
                     {STATUS.map((s) => (
                       <option key={s}>{s}</option>
                     ))}
-                  </select>
+                  </Select>
                   <button
-                    className="px-2 text-rose-600"
-                    onClick={() =>
-                      setForm((f) => ({
-                        ...f,
-                        statusRows: f.statusRows.filter((_, j) => j !== i),
-                      }))
-                    }
+                    className="rounded-md px-2 text-rose-500 hover:bg-rose-50"
+                    onClick={() => setForm((f) => ({ ...f, statusRows: f.statusRows.filter((_, j) => j !== i) }))}
                   >
                     ×
                   </button>
                 </div>
               ))}
               <button
-                className="text-xs text-sky-600 hover:underline"
-                onClick={() =>
-                  setForm((f) => ({
-                    ...f,
-                    statusRows: [...f.statusRows, { rotulo: '', status: 'ativo' }],
-                  }))
-                }
+                className="text-xs font-medium text-indigo-600 hover:underline"
+                onClick={() => setForm((f) => ({ ...f, statusRows: [...f.statusRows, { rotulo: '', status: 'ativo' }] }))}
               >
                 + adicionar tradução
               </button>
             </div>
 
-            <label className="flex items-center gap-2 text-sm">
+            <label className="flex items-center gap-2 text-sm text-slate-700">
               <input
                 type="checkbox"
                 checked={form.padrao}
                 onChange={(e) => setForm((f) => ({ ...f, padrao: e.target.checked }))}
               />
-              Template padrão deste broker
+              Template padrão deste fornecedor
             </label>
 
-            <div className="flex gap-2">
-              <button
-                className="rounded bg-slate-900 px-4 py-1.5 text-sm font-medium text-white hover:bg-slate-700"
-                onClick={() => void salvar()}
-              >
-                Salvar
-              </button>
+            <div className="flex gap-2 pt-1">
+              <Button onClick={() => void salvar()}>Salvar</Button>
               {form.id !== null && (
-                <button
-                  className="rounded border border-slate-300 px-4 py-1.5 text-sm"
-                  onClick={() => setForm(formVazio())}
-                >
+                <Button variante="secundario" onClick={() => setForm(formVazio())}>
                   Cancelar
-                </button>
+                </Button>
               )}
             </div>
           </div>
         </Card>
       </div>
-    </div>
+    </>
   );
 }

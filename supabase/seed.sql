@@ -30,14 +30,24 @@ insert into public.linhas
   -- ociosa, sem veículo, mas dentro da fidelidade → protegida (fidelidade)
   ('8955170110001000007', '5511990000007', '22222222-2222-2222-2222-222222222222', 'bbbbbbbb-1111-1111-1111-111111111111', 'ativo', false, null, '2025-08-01', '2026-12-31');
 
-insert into public.consumo_mensal (iccid, referencia_mes, consumo_mb, custo, ultima_conexao, fonte) values
-  ('8955170110001000001', '2026-05', 8.42, 4.90, '2026-05-30T18:22:00Z', 'planilha'),
-  ('8955170110001000002', '2026-05', 23.70, 11.45, '2026-05-31T07:10:00Z', 'planilha'),
-  ('8955170110001000003', '2026-05', 0.00, 7.90, '2026-02-08T03:15:00Z', 'planilha'),
-  ('8955170110001000004', '2026-05', 0.00, 5.50, '2026-01-20T11:00:00Z', 'planilha'),
-  ('8955170110001000005', '2026-05', 0.12, 5.50, '2026-02-25T22:40:00Z', 'planilha'),
-  ('8955170110001000006', '2026-05', 0.00, 5.50, null, 'planilha'),
-  ('8955170110001000007', '2026-05', 0.00, 5.50, '2026-01-10T08:00:00Z', 'planilha');
+insert into public.consumo_mensal (iccid, referencia_mes, consumo_mb, custo, ultima_conexao, operadora, fonte) values
+  -- março/2026 — 3 chips
+  ('8955170110001000001', '2026-03', 6.10, 4.90, '2026-03-28T10:00:00Z', 'Vivo', 'planilha'),
+  ('8955170110001000002', '2026-03', 9.00, 7.90, '2026-03-30T12:00:00Z', 'Claro', 'planilha'),
+  ('8955170110001000003', '2026-03', 1.20, 7.90, '2026-03-15T09:00:00Z', 'Vivo', 'planilha'),
+  -- abril/2026 — 4 chips
+  ('8955170110001000001', '2026-04', 7.30, 4.90, '2026-04-29T18:00:00Z', 'Vivo', 'planilha'),
+  ('8955170110001000002', '2026-04', 15.00, 9.20, '2026-04-30T07:00:00Z', 'Claro', 'planilha'),
+  ('8955170110001000003', '2026-04', 0.00, 7.90, '2026-02-08T03:15:00Z', 'Vivo', 'planilha'),
+  ('8955170110001000004', '2026-04', 0.00, 5.50, '2026-01-20T11:00:00Z', 'TIM', 'planilha'),
+  -- maio/2026 — 7 chips
+  ('8955170110001000001', '2026-05', 8.42, 4.90, '2026-05-30T18:22:00Z', 'Vivo', 'planilha'),
+  ('8955170110001000002', '2026-05', 23.70, 11.45, '2026-05-31T07:10:00Z', 'Claro', 'planilha'),
+  ('8955170110001000003', '2026-05', 0.00, 7.90, '2026-02-08T03:15:00Z', 'Vivo', 'planilha'),
+  ('8955170110001000004', '2026-05', 0.00, 5.50, '2026-01-20T11:00:00Z', 'TIM', 'planilha'),
+  ('8955170110001000005', '2026-05', 0.12, 5.50, '2026-02-25T22:40:00Z', 'Claro', 'planilha'),
+  ('8955170110001000006', '2026-05', 0.00, 5.50, null, 'TIM', 'planilha'),
+  ('8955170110001000007', '2026-05', 0.00, 5.50, '2026-01-10T08:00:00Z', 'Vivo', 'planilha');
 
 insert into public.veiculos_vinculo (iccid, placa, ativo) values
   ('8955170110001000001', 'ABC1D23', true),
@@ -55,7 +65,7 @@ insert into public.mapeamentos_colunas
   (
     '11111111-1111-1111-1111-111111111111',
     'Arqia — layout padrão',
-    '{"iccid":"ICCID","msisdn":"Linha","plano":"Plano","consumo":"Consumo (KB)","custo":"Valor","status":"Situacao","ultimaConexao":"Ultima Conexao"}',
+    '{"iccid":"ICCID","msisdn":"Linha","plano":"Plano","consumo":"Consumo (KB)","custo":"Valor","status":"Situacao","ultimaConexao":"Ultima Conexao","operadora":"Operadora"}',
     'KB',
     '{"ATIVADO":"ativo","SUSPENSO":"suspenso","CANCELADO":"cancelado"}',
     true
@@ -63,7 +73,7 @@ insert into public.mapeamentos_colunas
   (
     '22222222-2222-2222-2222-222222222222',
     'Transmobi — layout padrão',
-    '{"iccid":"iccid","msisdn":"msisdn","plano":"plano","consumo":"consumo_mb","custo":"custo","status":"status","ultimaConexao":"ultima_conexao"}',
+    '{"iccid":"iccid","msisdn":"msisdn","plano":"plano","consumo":"consumo_mb","custo":"custo","status":"status","ultimaConexao":"ultima_conexao","operadora":"operadora"}',
     'MB',
     '{}',
     true

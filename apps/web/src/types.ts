@@ -15,6 +15,30 @@ export interface Broker {
   nome: string;
   tipo_ingestao: 'planilha' | 'scraping' | 'api';
   planos: Plano[];
+  qtdLinhas?: number;
+}
+
+export interface PontoTendencia {
+  referenciaMes: string;
+  qtdChips: number;
+  custoTotal: number;
+  consumoTotalMb: number;
+  consumoMaxMb: number;
+}
+
+export interface LinhaListada {
+  iccid: string;
+  msisdn: string | null;
+  ultimaConexao: string | null;
+  consumoMb: number | null;
+  operadora: string | null;
+  dataAtivacao: string | null;
+  mensalidade: number | null;
+  plano: string | null;
+  fornecedor: string;
+  status: StatusLinha;
+  protegida: boolean;
+  referenciaMes: string | null;
 }
 
 export interface MapeamentoColunas {

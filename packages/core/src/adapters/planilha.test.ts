@@ -46,6 +46,7 @@ describe('PlanilhaAdapter', () => {
       franquiaMb: null,
       consumoMb: 2, // 2048 KB
       custoMensal: 4.9,
+      operadora: null,
       status: 'ativo',
       ultimaConexao: '2026-05-30T00:00:00.000Z',
       referenciaMes: '2026-05',
@@ -105,6 +106,16 @@ describe('PlanilhaAdapter', () => {
     };
     const { linhas } = await adapter(cfg).parse([{ ICCID: 'A' }], '2026-05');
     expect(linhas[0]?.plano).toBe('Plano Único');
+  });
+
+  it('lê a operadora conectada quando mapeada', async () => {
+    const cfg: ConfigPlanilhaAdapter = {
+      broker: 'X',
+      unidadeConsumo: 'MB',
+      mapeamento: { iccid: 'ICCID', operadora: 'Rede' },
+    };
+    const { linhas } = await adapter(cfg).parse([{ ICCID: 'A', Rede: 'Vivo' }], '2026-05');
+    expect(linhas[0]?.operadora).toBe('Vivo');
   });
 
   it('normaliza franquia usando a unidade de consumo', async () => {

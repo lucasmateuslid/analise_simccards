@@ -42,6 +42,7 @@ export interface ConsumoMensal {
   consumo_mb: number;
   custo: number;
   ultima_conexao: string | null;
+  operadora: string | null;
   fonte: FonteIngestao;
   criado_em: string;
 }

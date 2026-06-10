@@ -57,7 +57,7 @@ curl http://localhost:3001/health/db   # deve responder {"ok":true,"brokers":2}
 | `brokers` | Operadoras contratadas e tipo de ingestão (planilha/scraping/api) |
 | `planos` | Plano por broker: franquia (MB) e custo mensal |
 | `linhas` | Chips (PK = ICCID), status e flag/motivo de proteção |
-| `consumo_mensal` | Snapshot por linha e mês — `UNIQUE(iccid, referencia_mes)` |
+| `consumo_mensal` | Snapshot por linha e mês — `UNIQUE(iccid, referencia_mes)`; inclui `operadora` (rede conectada) |
 | `mapeamentos_colunas` | Templates "coluna do arquivo → campo canônico" por broker (Fase 1) |
 | `veiculos_vinculo` | ICCID ↔ placa, sincronizado do rastreamento (fonte de verdade p/ "veículo ativo") |
 | `ingestoes` | Log de cada importação com erros por registro |
@@ -81,6 +81,11 @@ Ingestão (Fase 1):
 Analytics (Fase 2):
 - `GET /analytics/meses` · `GET /analytics/resumo?mes=` (custo total, variação vs. mês anterior, alto consumo, ociosas prelim.)
 - `GET /analytics/por-broker?mes=` · `GET /analytics/alto-consumo?mes=` · `GET /analytics/linhas?mes=&broker=&status=&altoConsumo=`
+- `GET /analytics/tendencias` — série mensal (chips, custo, consumo total e pico) para os gráficos de evolução
+
+Linhas e fornecedores:
+- `GET /linhas?busca=&broker=&status=` — todas as linhas com o último snapshot (operadora, consumo, mensalidade, plano…)
+- `GET /brokers` (com contagem de linhas) · `POST /brokers` · `DELETE /brokers/:id` (bloqueia se houver linhas)
 
 Cancelamento e veículos (Fase 3):
 - `GET /cancelamento/candidatas?mes=` · `GET /cancelamento/protegidas?mes=` · `GET /cancelamento/resumo?mes=`
