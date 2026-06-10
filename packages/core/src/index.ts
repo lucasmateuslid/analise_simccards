@@ -11,6 +11,7 @@ export type {
   ConsumoMensal,
   Ingestao,
   Linha,
+  MapeamentoColunasRow,
   Plano,
   StatusIngestao,
   TipoIngestaoBroker,
@@ -25,6 +26,13 @@ export type {
   ResultadoIngestao,
   SourceAdapter,
 } from './adapters/adapter.js';
+
+export { PlanilhaAdapter } from './adapters/planilha.js';
+export type {
+  ConfigPlanilhaAdapter,
+  LinhaBruta,
+  MapeamentoColunas,
+} from './adapters/planilha.js';
 
 export {
   normalizeConsumoToMb,

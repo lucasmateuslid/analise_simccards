@@ -58,6 +58,7 @@ curl http://localhost:3001/health/db   # deve responder {"ok":true,"brokers":2}
 | `planos` | Plano por broker: franquia (MB) e custo mensal |
 | `linhas` | Chips (PK = ICCID), status e flag/motivo de proteção |
 | `consumo_mensal` | Snapshot por linha e mês — `UNIQUE(iccid, referencia_mes)` |
+| `mapeamentos_colunas` | Templates "coluna do arquivo → campo canônico" por broker (Fase 1) |
 | `veiculos_vinculo` | ICCID ↔ placa, sincronizado do rastreamento (fonte de verdade p/ "veículo ativo") |
 | `ingestoes` | Log de cada importação com erros por registro |
 | `app_config` | Parâmetros de negócio (ex.: `limite_ociosidade_dias = 90`) |
@@ -70,10 +71,23 @@ curl http://localhost:3001/health/db   # deve responder {"ok":true,"brokers":2}
 - TypeScript estrito em todos os packages; `any` proibido no domínio (`packages/core`) via ESLint.
 - Cancelamento **nunca é automático**: o motor de regras (Fase 3) apenas sinaliza candidatas para revisão.
 
+## Endpoints da API
+
+Ingestão (Fase 1):
+- `POST /ingestao/preview` (multipart `arquivo`) → cabeçalhos, amostra e broker detectado pelo nome do arquivo
+- `POST /ingestao/importar` (multipart `arquivo` + `brokerId`, `referenciaMes`, `mapeamentoId`) → grava snapshot e registra `ingestoes`
+- `GET /brokers`, `POST /brokers`, `GET|POST|PUT|DELETE /mapeamentos`
+
+Analytics (Fase 2):
+- `GET /analytics/meses` · `GET /analytics/resumo?mes=` (custo total, variação vs. mês anterior, alto consumo, ociosas prelim.)
+- `GET /analytics/por-broker?mes=` · `GET /analytics/alto-consumo?mes=` · `GET /analytics/linhas?mes=&broker=&status=&altoConsumo=`
+
+O dashboard (`apps/web`) consome esses endpoints via proxy `/api` do Vite. Há um arquivo de exemplo em [`exemplos/`](exemplos/) para testar a importação (layout do broker Arqia, com uma linha propositalmente inválida).
+
 ## Roadmap
 
 - **Fase 0 — Fundação** ✅ schema + RLS, tipos canônicos, normalizadores testados, esqueletos dos apps
-- **Fase 1 — Ingestão por planilha**: upload XLSX/CSV, mapeamento de colunas configurável por broker, snapshot mensal
-- **Fase 2 — Analytics + dashboard**: custo/consumo por broker, variação mensal, alto consumo (overage + P90), KPIs e gráficos
-- **Fase 3 — Motor de cancelamento**: candidatas (ociosidade > limite, sem veículo ativo, não protegida) + sincronização com rastreamento
+- **Fase 1 — Ingestão por planilha** ✅ upload XLSX/CSV (SheetJS/papaparse), `PlanilhaAdapter` genérico, mapeamento de colunas configurável por broker, snapshot mensal + log de erros por linha
+- **Fase 2 — Analytics + dashboard** ✅ custo/consumo por broker, variação mensal, alto consumo (overage + P90), KPIs, gráficos recharts e tabela filtrável
+- **Fase 3 — Motor de cancelamento**: candidatas (ociosidade > limite, sem veículo ativo, não protegida) + sincronização com rastreamento. *Obs.: o KPI "custo desperdiçado" no dashboard é hoje uma estimativa preliminar (só ociosidade) — será refinado aqui.*
 - **Fase 4 — Scraping piloto**: 1 broker via BullMQ + Playwright, retry/backoff e fallback para upload manual

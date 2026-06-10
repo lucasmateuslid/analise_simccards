@@ -12,7 +12,9 @@
   "dependencies": {
     "@m2m/core": "workspace:*",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.17.0",
+    "recharts": "^3.8.1"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.0.0",

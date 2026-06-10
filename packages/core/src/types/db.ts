@@ -68,3 +68,16 @@ export interface AppConfig {
   valor: unknown;
   atualizado_em: string;
 }
+
+export interface MapeamentoColunasRow {
+  id: string;
+  broker_id: string;
+  nome: string;
+  mapeamento: Record<string, string>;
+  unidade_consumo: 'bytes' | 'KB' | 'MB' | 'GB';
+  status_map: Record<string, StatusLinha>;
+  plano_fixo: string | null;
+  padrao: boolean;
+  criado_em: string;
+  atualizado_em: string;
+}

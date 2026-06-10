@@ -38,3 +38,23 @@ insert into public.veiculos_vinculo (iccid, placa, ativo) values
 insert into public.ingestoes (fonte, broker_id, qtd_linhas, status, erros) values
   ('planilha', '11111111-1111-1111-1111-111111111111', 3, 'sucesso', '[]'),
   ('planilha', '22222222-2222-2222-2222-222222222222', 2, 'sucesso', '[]');
+
+-- Templates de mapeamento de colunas (Fase 1) — exemplos para os layouts fictícios.
+insert into public.mapeamentos_colunas
+  (broker_id, nome, mapeamento, unidade_consumo, status_map, padrao) values
+  (
+    '11111111-1111-1111-1111-111111111111',
+    'Arqia — layout padrão',
+    '{"iccid":"ICCID","msisdn":"Linha","plano":"Plano","consumo":"Consumo (KB)","custo":"Valor","status":"Situacao","ultimaConexao":"Ultima Conexao"}',
+    'KB',
+    '{"ATIVADO":"ativo","SUSPENSO":"suspenso","CANCELADO":"cancelado"}',
+    true
+  ),
+  (
+    '22222222-2222-2222-2222-222222222222',
+    'Transmobi — layout padrão',
+    '{"iccid":"iccid","msisdn":"msisdn","plano":"plano","consumo":"consumo_mb","custo":"custo","status":"status","ultimaConexao":"ultima_conexao"}',
+    'MB',
+    '{}',
+    true
+  );
