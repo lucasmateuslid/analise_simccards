@@ -1,5 +1,5 @@
 import type { StatusLinha } from '@m2m/core';
-import { getSupabaseAdmin } from '../supabase.js';
+import { buscarTudo, getSupabaseAdmin } from '../supabase.js';
 
 /** Linha "achatada" do snapshot de um mês, com dados de linha/plano/broker. */
 export interface LinhaAnalytics {
@@ -98,14 +98,15 @@ async function carregarLimiteOciosidade(): Promise<number> {
 }
 
 async function buscarLinhas(referenciaMes: string): Promise<LinhaConsultada[]> {
-  const { data, error } = await getSupabaseAdmin()
-    .from('consumo_mensal')
-    .select(SELECT_CONSUMO)
-    .eq('referencia_mes', referenciaMes);
-  if (error) {
-    throw new Error(error.message);
-  }
-  return (data ?? []) as unknown as LinhaConsultada[];
+  const supabase = getSupabaseAdmin();
+  const linhas = await buscarTudo((de, ate) =>
+    supabase
+      .from('consumo_mensal')
+      .select(SELECT_CONSUMO)
+      .eq('referencia_mes', referenciaMes)
+      .range(de, ate),
+  );
+  return linhas as unknown as LinhaConsultada[];
 }
 
 /** Monta as linhas de analytics de um mês, marcando overage e P90 por broker. */
@@ -190,17 +191,14 @@ function mesAnterior(referenciaMes: string): string {
 }
 
 async function custoTotalDoMes(referenciaMes: string): Promise<number | null> {
-  const { data, error } = await getSupabaseAdmin()
-    .from('consumo_mensal')
-    .select('custo')
-    .eq('referencia_mes', referenciaMes);
-  if (error) {
-    throw new Error(error.message);
-  }
-  if ((data ?? []).length === 0) {
+  const supabase = getSupabaseAdmin();
+  const data = await buscarTudo<{ custo: number }>((de, ate) =>
+    supabase.from('consumo_mensal').select('custo').eq('referencia_mes', referenciaMes).range(de, ate),
+  );
+  if (data.length === 0) {
     return null;
   }
-  return (data ?? []).reduce((acc, r) => acc + (r.custo as number), 0);
+  return data.reduce((acc, r) => acc + r.custo, 0);
 }
 
 export async function obterResumoMes(referenciaMes: string): Promise<ResumoMes> {
@@ -249,16 +247,18 @@ export interface PontoTendencia {
 
 /** Série histórica mensal para os gráficos de evolução. */
 export async function obterTendencias(): Promise<PontoTendencia[]> {
-  const { data, error } = await getSupabaseAdmin()
-    .from('consumo_mensal')
-    .select('referencia_mes, consumo_mb, custo, iccid')
-    .order('referencia_mes', { ascending: true });
-  if (error) {
-    throw new Error(error.message);
-  }
+  const supabase = getSupabaseAdmin();
+  const data = await buscarTudo<{ referencia_mes: string; consumo_mb: number; custo: number; iccid: string }>(
+    (de, ate) =>
+      supabase
+        .from('consumo_mensal')
+        .select('referencia_mes, consumo_mb, custo, iccid')
+        .order('referencia_mes', { ascending: true })
+        .range(de, ate),
+  );
 
   const porMes = new Map<string, PontoTendencia>();
-  for (const r of data ?? []) {
+  for (const r of data) {
     const mes = r.referencia_mes as string;
     const consumo = r.consumo_mb as number;
     const ponto = porMes.get(mes) ?? {
@@ -284,14 +284,11 @@ export async function obterTendencias(): Promise<PontoTendencia[]> {
 }
 
 export async function listarMeses(): Promise<string[]> {
-  const { data, error } = await getSupabaseAdmin()
-    .from('consumo_mensal')
-    .select('referencia_mes')
-    .order('referencia_mes', { ascending: false });
-  if (error) {
-    throw new Error(error.message);
-  }
-  return [...new Set((data ?? []).map((r) => r.referencia_mes as string))];
+  const supabase = getSupabaseAdmin();
+  const data = await buscarTudo<{ referencia_mes: string }>((de, ate) =>
+    supabase.from('consumo_mensal').select('referencia_mes').order('referencia_mes', { ascending: false }).range(de, ate),
+  );
+  return [...new Set(data.map((r) => r.referencia_mes))];
 }
 
 function round2(n: number): number {

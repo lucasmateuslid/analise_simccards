@@ -22,7 +22,9 @@ export type IconName =
   | 'shield'
   | 'alert'
   | 'check'
-  | 'gauge';
+  | 'gauge'
+  | 'sun'
+  | 'moon';
 
 // Paths em viewBox 24x24, traço currentColor.
 const PATHS: Record<IconName, string> = {
@@ -49,6 +51,8 @@ const PATHS: Record<IconName, string> = {
   alert: 'M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0zM12 9v4M12 17h.01',
   check: 'M20 6L9 17l-5-5',
   gauge: 'M12 14l4-4M3.34 19a10 10 0 1117.32 0M12 14a2 2 0 100-4 2 2 0 000 4z',
+  sun: 'M12 17a5 5 0 100-10 5 5 0 000 10zM12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42',
+  moon: 'M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z',
 };
 
 export function Icon({ name, className = 'h-5 w-5' }: Props) {

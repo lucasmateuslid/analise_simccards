@@ -170,11 +170,11 @@ export function Mapeamentos() {
           {lista.length === 0 ? (
             <EmptyState icone="sliders" titulo="Nenhum template" descricao="Crie um ao lado." />
           ) : (
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-border">
               {lista.map((m) => (
                 <li key={m.id} className="flex items-center justify-between px-4 py-3">
                   <span className="flex items-center gap-2 text-sm">
-                    <span className="font-medium text-slate-800">{m.nome}</span>
+                    <span className="font-medium text-fg">{m.nome}</span>
                     {m.padrao && <Pill tom="indigo">padrão</Pill>}
                     <Pill>{m.unidade_consumo}</Pill>
                   </span>
@@ -183,7 +183,7 @@ export function Mapeamentos() {
                       Editar
                     </Button>
                     <button
-                      className="rounded-md px-2 py-1 text-xs font-medium text-rose-600 hover:bg-rose-50"
+                      className="rounded-md px-2 py-1 text-xs font-medium text-rose-400 hover:bg-rose-500/10"
                       onClick={() => void remover(m.id)}
                     >
                       <Icon name="trash" className="h-3.5 w-3.5" />
@@ -203,10 +203,10 @@ export function Mapeamentos() {
             </Field>
 
             <div>
-              <p className="mb-1.5 text-xs font-medium text-slate-600">Mapeamento de colunas</p>
+              <p className="mb-1.5 text-xs font-medium text-fg-muted">Mapeamento de colunas</p>
               <div className="grid grid-cols-2 gap-2">
                 {CAMPOS_CANONICOS.map((c) => (
-                  <label key={c.campo} className="text-xs text-slate-500">
+                  <label key={c.campo} className="text-xs text-fg-muted">
                     {c.rotulo}
                     {c.obrigatorio && <span className="text-rose-500"> *</span>}
                     <Input
@@ -237,7 +237,7 @@ export function Mapeamentos() {
             </div>
 
             <div>
-              <p className="mb-1.5 text-xs font-medium text-slate-600">
+              <p className="mb-1.5 text-xs font-medium text-fg-muted">
                 Tradução de status (rótulo do arquivo → canônico)
               </p>
               {form.statusRows.map((r, i) => (
@@ -270,7 +270,7 @@ export function Mapeamentos() {
                     ))}
                   </Select>
                   <button
-                    className="rounded-md px-2 text-rose-500 hover:bg-rose-50"
+                    className="rounded-md px-2 text-rose-400 hover:bg-rose-500/10"
                     onClick={() => setForm((f) => ({ ...f, statusRows: f.statusRows.filter((_, j) => j !== i) }))}
                   >
                     ×
@@ -278,14 +278,14 @@ export function Mapeamentos() {
                 </div>
               ))}
               <button
-                className="text-xs font-medium text-indigo-600 hover:underline"
+                className="text-xs font-medium text-accent hover:underline"
                 onClick={() => setForm((f) => ({ ...f, statusRows: [...f.statusRows, { rotulo: '', status: 'ativo' }] }))}
               >
                 + adicionar tradução
               </button>
             </div>
 
-            <label className="flex items-center gap-2 text-sm text-slate-700">
+            <label className="flex items-center gap-2 text-sm text-fg">
               <input
                 type="checkbox"
                 checked={form.padrao}

@@ -4,6 +4,7 @@ import type {
   LinhaAvaliada,
   LinhaListada,
   MapeamentoColunas,
+  MapeamentoInline,
   PontoTendencia,
   PreviewPlanilha,
   ResumoBroker,
@@ -70,13 +71,19 @@ export const api = {
     arquivo: File;
     brokerId: string;
     referenciaMes: string;
-    mapeamentoId: string;
+    mapeamentoId?: string;
+    mapeamentoInline?: MapeamentoInline;
   }) => {
     const fd = new FormData();
     fd.append('arquivo', params.arquivo);
     fd.append('brokerId', params.brokerId);
     fd.append('referenciaMes', params.referenciaMes);
-    fd.append('mapeamentoId', params.mapeamentoId);
+    if (params.mapeamentoId) {
+      fd.append('mapeamentoId', params.mapeamentoId);
+    }
+    if (params.mapeamentoInline) {
+      fd.append('mapeamentoInline', JSON.stringify(params.mapeamentoInline));
+    }
     return req<ResumoIngestao>('/ingestao/importar', { method: 'POST', body: fd });
   },
 

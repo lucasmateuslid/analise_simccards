@@ -14,6 +14,42 @@ const upload = multer({
 });
 
 const NUM_AMOSTRA = 5;
+const UNIDADES = ['bytes', 'KB', 'MB', 'GB'] as const;
+
+/** Monta um mapeamento efêmero (não salvo) a partir do JSON enviado no Upload. */
+function montarMapeamentoInline(json: string): MapeamentoColunasRow {
+  let corpo: {
+    mapeamento?: Record<string, string>;
+    unidade_consumo?: string;
+    status_map?: Record<string, string>;
+    plano_fixo?: string | null;
+  };
+  try {
+    corpo = JSON.parse(json) as typeof corpo;
+  } catch {
+    throw badRequest('"mapeamentoInline" não é um JSON válido');
+  }
+  const mapeamento = corpo.mapeamento ?? {};
+  if (typeof mapeamento['iccid'] !== 'string' || mapeamento['iccid'].trim() === '') {
+    throw badRequest('O mapeamento precisa definir a coluna do "iccid"');
+  }
+  const unidade = typeof corpo.unidade_consumo === 'string' ? corpo.unidade_consumo : 'MB';
+  if (!UNIDADES.includes(unidade as (typeof UNIDADES)[number])) {
+    throw badRequest(`unidade_consumo inválida (use: ${UNIDADES.join(', ')})`);
+  }
+  return {
+    id: 'inline',
+    broker_id: '',
+    nome: 'inline',
+    mapeamento,
+    unidade_consumo: unidade as (typeof UNIDADES)[number],
+    status_map: (corpo.status_map ?? {}) as MapeamentoColunasRow['status_map'],
+    plano_fixo: typeof corpo.plano_fixo === 'string' && corpo.plano_fixo !== '' ? corpo.plano_fixo : null,
+    padrao: false,
+    criado_em: '',
+    atualizado_em: '',
+  };
+}
 
 /** Sugere o broker pelo nome do arquivo (substring case-insensitive). */
 async function detectarBroker(nomeArquivo: string): Promise<{ id: string; nome: string } | null> {
@@ -46,10 +82,11 @@ ingestaoRouter.post('/importar', upload.single('arquivo'), async (req, res) => {
   if (req.file === undefined) {
     throw badRequest('Envie o arquivo no campo "arquivo"');
   }
-  const { brokerId, referenciaMes, mapeamentoId } = req.body as {
+  const { brokerId, referenciaMes, mapeamentoId, mapeamentoInline } = req.body as {
     brokerId?: string;
     referenciaMes?: string;
     mapeamentoId?: string;
+    mapeamentoInline?: string;
   };
   if (typeof brokerId !== 'string' || brokerId === '') {
     throw badRequest('Campo "brokerId" é obrigatório');
@@ -57,8 +94,10 @@ ingestaoRouter.post('/importar', upload.single('arquivo'), async (req, res) => {
   if (typeof referenciaMes !== 'string' || !isReferenciaMesValida(referenciaMes)) {
     throw badRequest('Campo "referenciaMes" inválido (esperado YYYY-MM)');
   }
-  if (typeof mapeamentoId !== 'string' || mapeamentoId === '') {
-    throw badRequest('Campo "mapeamentoId" é obrigatório');
+  const temId = typeof mapeamentoId === 'string' && mapeamentoId !== '';
+  const temInline = typeof mapeamentoInline === 'string' && mapeamentoInline !== '';
+  if (!temId && !temInline) {
+    throw badRequest('Informe "mapeamentoId" (template salvo) ou "mapeamentoInline"');
   }
 
   const supabase = getSupabaseAdmin();
@@ -71,14 +110,20 @@ ingestaoRouter.post('/importar', upload.single('arquivo'), async (req, res) => {
     throw notFound('Broker não encontrado');
   }
 
-  const { data: mapeamento, error: erroMap } = await supabase
-    .from('mapeamentos_colunas')
-    .select('*')
-    .eq('id', mapeamentoId)
-    .eq('broker_id', brokerId)
-    .single();
-  if (erroMap || mapeamento === null) {
-    throw notFound('Mapeamento não encontrado para este broker');
+  let mapeamento: MapeamentoColunasRow;
+  if (temId) {
+    const { data, error } = await supabase
+      .from('mapeamentos_colunas')
+      .select('*')
+      .eq('id', mapeamentoId)
+      .eq('broker_id', brokerId)
+      .single();
+    if (error || data === null) {
+      throw notFound('Mapeamento não encontrado para este broker');
+    }
+    mapeamento = data as MapeamentoColunasRow;
+  } else {
+    mapeamento = montarMapeamentoInline(mapeamentoInline as string);
   }
 
   const { rows } = lerPlanilha(req.file.buffer, req.file.originalname);
@@ -86,7 +131,7 @@ ingestaoRouter.post('/importar', upload.single('arquivo'), async (req, res) => {
     brokerId,
     brokerNome: broker.nome as string,
     referenciaMes,
-    mapeamento: mapeamento as MapeamentoColunasRow,
+    mapeamento,
     rows,
   });
   res.json(resumo);

@@ -8,7 +8,7 @@ Toda fonte de dados passa por um **adapter** que converte o formato bruto para u
 
 ```
 [Planilha XLSX/CSV] ──┐
-[Portal scraping]   ──┤──> [Adapter por fonte] ──> [Schema Canônico] ──> [Snapshot mensal] ──> [Analytics + Regras]
+                      ├──> [Adapter por fonte] ──> [Schema Canônico] ──> [Snapshot mensal] ──> [Analytics + Regras]
 [API broker]        ──┘
 ```
 
@@ -24,7 +24,6 @@ O schema canônico (`LinhaConsumoCanonico`) vive em [`packages/core`](packages/c
 packages/core    Domínio puro: tipos canônicos, contrato SourceAdapter, normalizadores (+ testes)
 apps/api         Express + TS — endpoints (health check pronto; ingestão/analytics nas Fases 1–2)
 apps/web         React + Vite + Tailwind — dashboard (esqueleto; KPIs/gráficos na Fase 2)
-apps/worker      BullMQ + Playwright — scraping (stub; implementação na Fase 4)
 supabase/        Migrations (schema + RLS), seed de desenvolvimento e config local
 ```
 
@@ -63,7 +62,7 @@ curl http://localhost:3001/health/db   # deve responder {"ok":true,"brokers":2}
 | `ingestoes` | Log de cada importação com erros por registro |
 | `app_config` | Parâmetros de negócio (ex.: `limite_ociosidade_dias = 90`) |
 
-**RLS (single-tenant):** `authenticated` tem acesso total; `anon` não acessa nada; backend/worker usam `service_role` via env.
+**RLS (single-tenant):** `authenticated` tem acesso total; `anon` não acessa nada; o backend usa `service_role` via env.
 
 ## Convenções
 
@@ -100,7 +99,8 @@ O dashboard (`apps/web`) consome esses endpoints via proxy `/api` do Vite. Há u
 - **Fase 1 — Ingestão por planilha** ✅ upload XLSX/CSV (SheetJS/papaparse), `PlanilhaAdapter` genérico, mapeamento de colunas configurável por broker, snapshot mensal + log de erros por linha
 - **Fase 2 — Analytics + dashboard** ✅ custo/consumo por broker, variação mensal, alto consumo (overage + P90), KPIs, gráficos recharts e tabela filtrável
 - **Fase 3 — Motor de cancelamento** ✅ motor de regras puro no core (candidata vs. protegida com motivo, nunca cancela sozinho), sincronização de `veiculos_vinculo` (Traccar/mock), fila de revisão com aprovar/proteger e KPIs de economia reais no dashboard
-- **Fase 4 — Scraping piloto**: 1 broker via BullMQ + Playwright, retry/backoff e fallback para upload manual
+
+> A ingestão automática por scraping de portais foi **descartada** — a entrada de dados é feita por upload manual de planilha (Fase 1). Novas fontes, se necessário, entram como adapters via API do broker (`tipo_ingestao = 'api'`), reusando o mesmo pipeline canônico.
 
 ### Motor de cancelamento (Fase 3)
 

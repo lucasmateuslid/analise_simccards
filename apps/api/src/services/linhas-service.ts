@@ -1,5 +1,5 @@
 import type { StatusLinha } from '@m2m/core';
-import { getSupabaseAdmin } from '../supabase.js';
+import { buscarTudo, getSupabaseAdmin } from '../supabase.js';
 
 /** Uma linha com o último snapshot conhecido (visão "todas as linhas"). */
 export interface LinhaListada {
@@ -37,15 +37,16 @@ interface ConsumoRow {
 
 /** Último snapshot (referencia_mes mais recente) por ICCID. */
 async function ultimoConsumoPorIccid(): Promise<Map<string, ConsumoRow>> {
-  const { data, error } = await getSupabaseAdmin()
-    .from('consumo_mensal')
-    .select('iccid, referencia_mes, consumo_mb, ultima_conexao, operadora')
-    .order('referencia_mes', { ascending: false });
-  if (error) {
-    throw new Error(error.message);
-  }
+  const supabase = getSupabaseAdmin();
+  const rows = await buscarTudo<ConsumoRow>((de, ate) =>
+    supabase
+      .from('consumo_mensal')
+      .select('iccid, referencia_mes, consumo_mb, ultima_conexao, operadora')
+      .order('referencia_mes', { ascending: false })
+      .range(de, ate),
+  );
   const mapa = new Map<string, ConsumoRow>();
-  for (const row of (data ?? []) as ConsumoRow[]) {
+  for (const row of rows) {
     if (!mapa.has(row.iccid)) {
       mapa.set(row.iccid, row);
     }
@@ -61,30 +62,32 @@ export interface FiltrosLinhas {
 
 export async function listarLinhas(filtros: FiltrosLinhas = {}): Promise<LinhaListada[]> {
   const supabase = getSupabaseAdmin();
-  const query = supabase
-    .from('linhas')
-    .select(
-      'iccid, msisdn, status, protegida, data_ativacao, brokers!inner ( id, nome ), planos ( nome, custo_mensal )',
-    )
-    .order('iccid');
 
-  if (filtros.brokerId) {
-    query.eq('broker_id', filtros.brokerId);
-  }
-  if (filtros.status) {
-    query.eq('status', filtros.status);
-  }
-  if (filtros.busca) {
-    const termo = `%${filtros.busca}%`;
-    query.or(`iccid.ilike.${termo},msisdn.ilike.${termo}`);
-  }
+  // Reconstrói a query a cada página: o builder do supabase-js não é reutilizável
+  // com segurança entre chamadas. buscarTudo pagina até esgotar (contorna max_rows).
+  const todas = await buscarTudo<LinhaRow>((de, ate) => {
+    const query = supabase
+      .from('linhas')
+      .select(
+        'iccid, msisdn, status, protegida, data_ativacao, brokers!inner ( id, nome ), planos ( nome, custo_mensal )',
+      )
+      .order('iccid');
+    if (filtros.brokerId) {
+      query.eq('broker_id', filtros.brokerId);
+    }
+    if (filtros.status) {
+      query.eq('status', filtros.status);
+    }
+    if (filtros.busca) {
+      const termo = `%${filtros.busca}%`;
+      query.or(`iccid.ilike.${termo},msisdn.ilike.${termo}`);
+    }
+    return query.range(de, ate) as unknown as PromiseLike<{ data: LinhaRow[] | null; error: { message: string } | null }>;
+  });
 
-  const [{ data, error }, consumos] = await Promise.all([query, ultimoConsumoPorIccid()]);
-  if (error) {
-    throw new Error(error.message);
-  }
+  const consumos = await ultimoConsumoPorIccid();
 
-  return ((data ?? []) as unknown as LinhaRow[]).map((l): LinhaListada => {
+  return todas.map((l): LinhaListada => {
     const c = consumos.get(l.iccid);
     return {
       iccid: l.iccid,

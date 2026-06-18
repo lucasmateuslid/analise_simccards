@@ -132,15 +132,15 @@ export function Fornecedores() {
             </thead>
             <tbody>
               {brokers.map((b) => (
-                <tr key={b.id} className="border-b border-slate-50 hover:bg-slate-50/60">
-                  <Td className="font-medium text-slate-800">{b.nome}</Td>
+                <tr key={b.id} className="border-b border-border hover:bg-surface-2">
+                  <Td className="font-medium text-fg">{b.nome}</Td>
                   <Td>
                     <Pill>{b.tipo_ingestao}</Pill>
                   </Td>
                   <Td right>{b.qtdLinhas ?? 0}</Td>
                   <Td>
                     {b.planos.length === 0 ? (
-                      <span className="text-slate-400">—</span>
+                      <span className="text-fg-subtle">—</span>
                     ) : (
                       <span className="flex flex-wrap gap-1">
                         {b.planos.map((p) => (
@@ -153,7 +153,7 @@ export function Fornecedores() {
                   </Td>
                   <Td right>
                     <button
-                      className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-rose-600 hover:bg-rose-50 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
+                      className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-rose-400 hover:bg-rose-500/10 disabled:cursor-not-allowed disabled:text-fg-subtle disabled:hover:bg-transparent"
                       onClick={() => void remover(b)}
                       disabled={(b.qtdLinhas ?? 0) > 0}
                       title={(b.qtdLinhas ?? 0) > 0 ? 'Remova as linhas antes de excluir' : 'Remover'}

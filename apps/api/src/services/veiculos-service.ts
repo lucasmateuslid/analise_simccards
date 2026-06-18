@@ -1,4 +1,4 @@
-import { getSupabaseAdmin } from '../supabase.js';
+import { buscarTudo, getSupabaseAdmin } from '../supabase.js';
 import { MockTrackingSource } from './tracking/mock.js';
 import type { TrackingSource } from './tracking/source.js';
 import { TraccarSource } from './tracking/traccar.js';
@@ -36,11 +36,10 @@ export async function sincronizarVeiculos(source: TrackingSource): Promise<Resum
   const supabase = getSupabaseAdmin();
   const vinculos = await source.buscarVinculos();
 
-  const { data: linhasExistentes, error: erroLinhas } = await supabase.from('linhas').select('iccid');
-  if (erroLinhas) {
-    throw new Error(erroLinhas.message);
-  }
-  const iccidsValidos = new Set((linhasExistentes ?? []).map((l) => l.iccid as string));
+  const linhasExistentes = await buscarTudo<{ iccid: string }>((de, ate) =>
+    supabase.from('linhas').select('iccid').range(de, ate),
+  );
+  const iccidsValidos = new Set(linhasExistentes.map((l) => l.iccid));
 
   const validos = vinculos.filter((v) => iccidsValidos.has(v.iccid));
   const ignorados = vinculos.length - validos.length;

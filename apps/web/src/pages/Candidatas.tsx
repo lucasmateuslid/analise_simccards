@@ -203,17 +203,17 @@ export function Candidatas() {
               </thead>
               <tbody>
                 {candidatas.map((l) => (
-                  <tr key={l.iccid} className="border-b border-slate-50 hover:bg-slate-50/60">
-                    <Td className="font-mono text-xs text-slate-600">{l.iccid}</Td>
-                    <Td className="font-medium text-slate-800">{l.broker}</Td>
+                  <tr key={l.iccid} className="border-b border-border hover:bg-surface-2">
+                    <Td className="font-mono text-xs text-fg-muted">{l.iccid}</Td>
+                    <Td className="font-medium text-fg">{l.broker}</Td>
                     <Td>{l.plano ?? '—'}</Td>
                     <Td>{formatData(l.ultimaConexao)}</Td>
                     <Td right>
-                      <span className="font-semibold text-rose-600">{l.diasSemConexao ?? '—'}</span>
+                      <span className="font-semibold text-rose-400">{l.diasSemConexao ?? '—'}</span>
                     </Td>
                     <Td right>{formatBRL(l.custoMensal)}</Td>
                     <Td right>
-                      <span className="font-semibold text-emerald-600">{formatBRL(l.economiaAnual)}</span>
+                      <span className="font-semibold text-emerald-400">{formatBRL(l.economiaAnual)}</span>
                     </Td>
                     <Td right>
                       <div className="flex justify-end gap-1.5">
@@ -247,8 +247,8 @@ export function Candidatas() {
             </thead>
             <tbody>
               {protegidas.map((l) => (
-                <tr key={l.iccid} className="border-b border-slate-50 hover:bg-slate-50/60">
-                  <Td className="font-mono text-xs text-slate-600">{l.iccid}</Td>
+                <tr key={l.iccid} className="border-b border-border hover:bg-surface-2">
+                  <Td className="font-mono text-xs text-fg-muted">{l.iccid}</Td>
                   <Td>{l.broker}</Td>
                   <Td right>{l.diasSemConexao ?? '—'}</Td>
                   <Td>

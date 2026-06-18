@@ -16,18 +16,24 @@ import { api } from '../api';
 import { Card, CardTitle, EmptyState, KpiCard, PageHeader, Select, Spinner, Table, Td, Th } from '../components/ui';
 import { Alert } from '../components/ui';
 import { formatBRL, formatMb, formatNum, formatPct } from '../format';
+import { useTheme } from '../theme';
 import type { PontoTendencia, ResumoBroker, ResumoCancelamento, ResumoMes } from '../types';
 
-const CORES = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
-
-const tt = (cor = '#fff'): React.CSSProperties => ({
-  borderRadius: 8,
-  border: '1px solid #e2e8f0',
-  fontSize: 12,
-  background: cor,
-});
+const CORES = ['#84cc16', '#22d3ee', '#10b981', '#f59e0b', '#fb7185', '#a78bfa'];
 
 export function Dashboard() {
+  const { tema } = useTheme();
+  const escuro = tema === 'dark';
+  const grid = escuro ? '#232c38' : '#e2e8f0';
+  const eixo = escuro ? '#6b7785' : '#94a3b8';
+  const ttStyle: React.CSSProperties = {
+    borderRadius: 8,
+    border: `1px solid ${grid}`,
+    fontSize: 12,
+    background: escuro ? '#11161c' : '#fff',
+    color: escuro ? '#e6edf3' : '#0f172a',
+  };
+
   const [meses, setMeses] = useState<string[]>([]);
   const [mes, setMes] = useState('');
   const [resumo, setResumo] = useState<ResumoMes | null>(null);
@@ -122,6 +128,9 @@ export function Dashboard() {
               icone="chip"
               tom="destaque"
               detalhe={cancel === null ? undefined : `${cancel.qtdProtegidas} protegidas`}
+              progresso={
+                cancel === null ? undefined : { atual: cancel.qtdProtegidas, total: resumo.qtdLinhas }
+              }
             />
             <KpiCard
               titulo="Custo total"
@@ -146,6 +155,9 @@ export function Dashboard() {
               icone="scissors"
               tom={cancel !== null && cancel.qtdCandidatas > 0 ? 'alerta' : 'positivo'}
               detalhe={cancel === null ? undefined : `${cancel.qtdCandidatas} candidatas a cancelar`}
+              progresso={
+                cancel === null ? undefined : { atual: cancel.qtdCandidatas, total: resumo.qtdLinhas }
+              }
             />
           </div>
 
@@ -156,12 +168,12 @@ export function Dashboard() {
               <div className="p-4">
                 <ResponsiveContainer width="100%" height={260}>
                   <ComposedChart data={tendencias}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                    <XAxis dataKey="referenciaMes" fontSize={12} stroke="#94a3b8" />
-                    <YAxis yAxisId="l" fontSize={12} stroke="#94a3b8" />
-                    <YAxis yAxisId="r" orientation="right" fontSize={12} stroke="#94a3b8" allowDecimals={false} />
-                    <Tooltip contentStyle={tt()} />
-                    <Bar yAxisId="l" dataKey="custoTotal" name="Custo (R$)" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={28} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={grid} />
+                    <XAxis dataKey="referenciaMes" fontSize={12} stroke={eixo} />
+                    <YAxis yAxisId="l" fontSize={12} stroke={eixo} />
+                    <YAxis yAxisId="r" orientation="right" fontSize={12} stroke={eixo} allowDecimals={false} />
+                    <Tooltip contentStyle={ttStyle} />
+                    <Bar yAxisId="l" dataKey="custoTotal" name="Custo (R$)" fill="#84cc16" radius={[4, 4, 0, 0]} barSize={28} />
                     <Line yAxisId="r" type="monotone" dataKey="qtdChips" name="Chips" stroke="#10b981" strokeWidth={2.5} dot={{ r: 3 }} />
                   </ComposedChart>
                 </ResponsiveContainer>
@@ -169,7 +181,7 @@ export function Dashboard() {
             </Card>
 
             <Card>
-              <CardTitle acao={<span className="text-xs text-slate-400">pico histórico {formatMb(picoConsumo)}</span>}>
+              <CardTitle acao={<span className="text-xs text-fg-subtle">pico histórico {formatMb(picoConsumo)}</span>}>
                 Evolução de consumo
               </CardTitle>
               <div className="p-4">
@@ -177,15 +189,15 @@ export function Dashboard() {
                   <ComposedChart data={tendencias}>
                     <defs>
                       <linearGradient id="gConsumo" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#0ea5e9" stopOpacity={0.3} />
-                        <stop offset="100%" stopColor="#0ea5e9" stopOpacity={0} />
+                        <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.3} />
+                        <stop offset="100%" stopColor="#22d3ee" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                    <XAxis dataKey="referenciaMes" fontSize={12} stroke="#94a3b8" />
-                    <YAxis fontSize={12} stroke="#94a3b8" />
-                    <Tooltip contentStyle={tt()} formatter={(v: unknown) => formatMb(Number(v))} />
-                    <Area type="monotone" dataKey="consumoTotalMb" name="Consumo total" stroke="#0ea5e9" strokeWidth={2.5} fill="url(#gConsumo)" />
+                    <CartesianGrid strokeDasharray="3 3" stroke={grid} />
+                    <XAxis dataKey="referenciaMes" fontSize={12} stroke={eixo} />
+                    <YAxis fontSize={12} stroke={eixo} />
+                    <Tooltip contentStyle={ttStyle} formatter={(v: unknown) => formatMb(Number(v))} />
+                    <Area type="monotone" dataKey="consumoTotalMb" name="Consumo total" stroke="#22d3ee" strokeWidth={2.5} fill="url(#gConsumo)" />
                     <Line type="monotone" dataKey="consumoMaxMb" name="Máx. por linha" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} />
                   </ComposedChart>
                 </ResponsiveContainer>
@@ -200,10 +212,10 @@ export function Dashboard() {
               <div className="p-4">
                 <ResponsiveContainer width="100%" height={240}>
                   <BarChart data={dadosBroker} layout="vertical" margin={{ left: 8 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
-                    <XAxis type="number" fontSize={12} stroke="#94a3b8" />
-                    <YAxis type="category" dataKey="broker" fontSize={12} stroke="#94a3b8" width={80} />
-                    <Tooltip contentStyle={tt()} formatter={(v: unknown) => formatBRL(Number(v))} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={grid} horizontal={false} />
+                    <XAxis type="number" fontSize={12} stroke={eixo} />
+                    <YAxis type="category" dataKey="broker" fontSize={12} stroke={eixo} width={80} />
+                    <Tooltip contentStyle={ttStyle} formatter={(v: unknown) => formatBRL(Number(v))} />
                     <Bar dataKey="custo" name="Custo" radius={[0, 4, 4, 0]} barSize={22}>
                       {dadosBroker.map((_, i) => (
                         <Cell key={i} fill={CORES[i % CORES.length]} />
@@ -218,11 +230,11 @@ export function Dashboard() {
               <div className="p-4">
                 <ResponsiveContainer width="100%" height={240}>
                   <BarChart data={dadosBroker} layout="vertical" margin={{ left: 8 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
-                    <XAxis type="number" fontSize={12} stroke="#94a3b8" />
-                    <YAxis type="category" dataKey="broker" fontSize={12} stroke="#94a3b8" width={80} />
-                    <Tooltip contentStyle={tt()} formatter={(v: unknown) => formatMb(Number(v))} />
-                    <Bar dataKey="consumo" name="Consumo" fill="#0ea5e9" radius={[0, 4, 4, 0]} barSize={22} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={grid} horizontal={false} />
+                    <XAxis type="number" fontSize={12} stroke={eixo} />
+                    <YAxis type="category" dataKey="broker" fontSize={12} stroke={eixo} width={80} />
+                    <Tooltip contentStyle={ttStyle} formatter={(v: unknown) => formatMb(Number(v))} />
+                    <Bar dataKey="consumo" name="Consumo" fill="#22d3ee" radius={[0, 4, 4, 0]} barSize={22} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -230,7 +242,7 @@ export function Dashboard() {
           </div>
 
           <Card>
-            <CardTitle acao={<span className="text-xs text-slate-400">{resumo.qtdAltoConsumo} com alto consumo</span>}>
+            <CardTitle acao={<span className="text-xs text-fg-subtle">{resumo.qtdAltoConsumo} com alto consumo</span>}>
               Resumo por fornecedor — {mes}
             </CardTitle>
             <Table>
@@ -245,14 +257,14 @@ export function Dashboard() {
               </thead>
               <tbody>
                 {porBroker.map((b) => (
-                  <tr key={b.brokerId} className="border-b border-slate-50 hover:bg-slate-50/60">
-                    <Td className="font-medium text-slate-800">{b.broker}</Td>
+                  <tr key={b.brokerId} className="border-b border-border hover:bg-surface-2">
+                    <Td className="font-medium text-fg">{b.broker}</Td>
                     <Td right>{formatNum(b.qtdLinhas)}</Td>
                     <Td right>{formatMb(b.consumoMb)}</Td>
                     <Td right>{formatBRL(b.custo)}</Td>
                     <Td right>
                       {b.qtdAltoConsumo > 0 ? (
-                        <span className="font-medium text-rose-600">{b.qtdAltoConsumo}</span>
+                        <span className="font-medium text-rose-400">{b.qtdAltoConsumo}</span>
                       ) : (
                         '—'
                       )}

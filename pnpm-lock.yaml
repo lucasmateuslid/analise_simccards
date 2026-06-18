@@ -104,22 +104,6 @@ importers:
         specifier: ^6.0.0
         version: 6.4.3(@types/node@22.19.20)(jiti@2.7.0)(lightningcss@1.32.0)(tsx@4.22.4)
 
-  apps/worker:
-    dependencies:
-      '@m2m/core':
-        specifier: workspace:*
-        version: link:../../packages/core
-    devDependencies:
-      '@types/node':
-        specifier: ^22.0.0
-        version: 22.19.20
-      tsx:
-        specifier: ^4.19.0
-        version: 4.22.4
-      typescript:
-        specifier: ^5.6.0
-        version: 5.9.3
-
   packages/core:
     devDependencies:
       typescript:

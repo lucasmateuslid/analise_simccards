@@ -4,7 +4,7 @@ import {
   type ConfigCancelamento,
   type StatusLinha,
 } from '@m2m/core';
-import { getSupabaseAdmin } from '../supabase.js';
+import { buscarTudo, getSupabaseAdmin } from '../supabase.js';
 
 export interface LinhaAvaliada {
   iccid: string;
@@ -73,14 +73,11 @@ async function carregarConfig(): Promise<ConfigCancelamento> {
 
 /** ICCIDs com pelo menos um vínculo de veículo ativo. */
 async function iccidsComVeiculoAtivo(): Promise<Set<string>> {
-  const { data, error } = await getSupabaseAdmin()
-    .from('veiculos_vinculo')
-    .select('iccid')
-    .eq('ativo', true);
-  if (error) {
-    throw new Error(error.message);
-  }
-  return new Set((data ?? []).map((r) => r.iccid as string));
+  const supabase = getSupabaseAdmin();
+  const data = await buscarTudo<{ iccid: string }>((de, ate) =>
+    supabase.from('veiculos_vinculo').select('iccid').eq('ativo', true).range(de, ate),
+  );
+  return new Set(data.map((r) => r.iccid));
 }
 
 /** Avalia todas as linhas do mês pelo motor de cancelamento. */
@@ -92,12 +89,11 @@ export async function avaliarMes(referenciaMes: string): Promise<{
   const [config, comVeiculoAtivo, consulta] = await Promise.all([
     carregarConfig(),
     iccidsComVeiculoAtivo(),
-    supabase.from('consumo_mensal').select(SELECT).eq('referencia_mes', referenciaMes),
+    buscarTudo((de, ate) =>
+      supabase.from('consumo_mensal').select(SELECT).eq('referencia_mes', referenciaMes).range(de, ate),
+    ),
   ]);
-  if (consulta.error) {
-    throw new Error(consulta.error.message);
-  }
-  const brutas = (consulta.data ?? []) as unknown as LinhaConsultada[];
+  const brutas = consulta as unknown as LinhaConsultada[];
 
   const linhas = brutas.map((l): LinhaAvaliada => {
     const linha = l.linhas;

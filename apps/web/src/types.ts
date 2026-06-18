@@ -52,6 +52,14 @@ export interface MapeamentoColunas {
   padrao: boolean;
 }
 
+/** Mapeamento efêmero montado no Upload (não salvo como template). */
+export interface MapeamentoInline {
+  mapeamento: Record<string, string>;
+  unidade_consumo: UnidadeConsumo;
+  status_map: Record<string, StatusLinha>;
+  plano_fixo: string | null;
+}
+
 export interface PreviewPlanilha {
   headers: string[];
   amostra: Record<string, unknown>[];

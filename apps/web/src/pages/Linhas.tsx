@@ -59,7 +59,7 @@ export function Linhas() {
       <PageHeader
         titulo="Linhas"
         subtitulo="Todas as linhas com o último snapshot conhecido"
-        acoes={<span className="text-sm text-slate-400">{linhas.length} linha(s)</span>}
+        acoes={<span className="text-sm text-fg-subtle">{linhas.length} linha(s)</span>}
       />
 
       {erro !== null && <Alert tipo="erro">{erro}</Alert>}
@@ -115,8 +115,8 @@ export function Linhas() {
             </thead>
             <tbody>
               {linhas.map((l) => (
-                <tr key={l.iccid} className="border-b border-slate-50 hover:bg-slate-50/60">
-                  <Td className="font-mono text-xs text-slate-600">{l.iccid}</Td>
+                <tr key={l.iccid} className="border-b border-border hover:bg-surface-2">
+                  <Td className="font-mono text-xs text-fg-muted">{l.iccid}</Td>
                   <Td>{l.msisdn ?? '—'}</Td>
                   <Td>{formatData(l.ultimaConexao)}</Td>
                   <Td right>{l.consumoMb === null ? '—' : formatMb(l.consumoMb)}</Td>
@@ -124,7 +124,7 @@ export function Linhas() {
                   <Td>{formatData(l.dataAtivacao)}</Td>
                   <Td right>{l.mensalidade === null ? '—' : formatBRL(l.mensalidade)}</Td>
                   <Td>{l.plano ?? '—'}</Td>
-                  <Td className="font-medium text-slate-800">{l.fornecedor}</Td>
+                  <Td className="font-medium text-fg">{l.fornecedor}</Td>
                   <Td>
                     <span className="inline-flex items-center gap-1">
                       <StatusBadge status={l.status} />
